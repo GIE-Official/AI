@@ -3,1762 +3,778 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GIE-Soliton V2.5 "AWACS" — The Ma-Chao Equation Gateway</title>
+<title>GIE-Soliton V2.3 · Atomic Integrity Verification Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
+  onload="renderMathInElement(document.getElementById('peer-review-modal'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&family=Barlow:wght@300;400&display=swap');
-
-/* ── CSS Variables ── */
-:root {
-  --bg:            #080c10;
-  --bg2:           #0d1117;
-  --bg3:           #111820;
-  --border:        #1e2d3d;
-  --border2:       #243444;
-  --text:          #c9d8e8;
-  --text-dim:      #5a7a94;
-  --text-bright:   #e8f4ff;
-  --mono:          'Share Tech Mono', monospace;
-  --sans:          'Barlow Condensed', sans-serif;
-  --sans2:         'Barlow', sans-serif;
-
-  /* FSM state palette */
-  --c-active:      #00c87a;
-  --c-predrift:    #f5a623;
-  --c-resonance:   #9b59f5;
-  --c-drift:       #ff8c42;
-  --c-collapse:    #e8003d;
-  --c-standby:     #5a7a94;
-  --c-recovery:    #00b3cc;
-  --c-locked:      #cc0022;
-
-  /* AWACS accent */
-  --acc-cfr:       #00d4ff;
-  --acc-msts:      #9b59f5;
-  --acc-iff:       #00c87a;
-  --acc-lat:       #f5a623;
-}
-
+/* ── Reset & Root ────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+:root {
+  --bg:          #0a0a0a;
+  --surface:     #111111;
+  --border:      #222222;
+  --border2:     #2a2a2a;
+  --text:        #d1d1d1;
+  --text-dim:    #6b6b6b;
+  --text-faint:  #333333;
+  --purple:      #a855f7;
+  --purple-dim:  #3b1f5e;
+  --purple-glow: rgba(168,85,247,0.18);
+  --green:       #22c55e;
+  --green-dim:   #052e16;
+  --noise:       #4b5563;
+  --red:         #ef4444;
+  --amber:       #f59e0b;
+  --font:        'JetBrains Mono', 'Courier New', monospace;
+}
 html, body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans2);
-  font-size: 13px;
-  min-height: 100vh;
-  overflow-x: hidden;
+  background: var(--bg); color: var(--text);
+  font-family: var(--font); font-size: 12px; line-height: 1.5;
+  min-height: 100vh; overflow-x: hidden; cursor: crosshair;
 }
-
-/* ── Scanline overlay ── */
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9000;
+  background: repeating-linear-gradient(to bottom,transparent 0px,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);
+}
 body::after {
-  content: '';
-  position: fixed; inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent, transparent 2px,
-    rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px
-  );
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* ══════════════════════════════════════════
-   TOP BANNER
-══════════════════════════════════════════ */
-.top-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 20px;
-  background: linear-gradient(90deg, #0a1520 0%, #0d1a2a 100%);
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 100;
-}
-
-.banner-id {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-dim);
-  letter-spacing: 0.06em;
-}
-.banner-id span { color: var(--acc-cfr); }
-
-.banner-title {
-  font-family: var(--sans);
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  color: var(--text-bright);
-  text-transform: uppercase;
-}
-.banner-title em { color: var(--c-active); font-style: normal; }
-
-.banner-params {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-dim);
-  text-align: right;
-  line-height: 1.7;
-}
-.banner-params span { color: var(--acc-lat); }
-
-/* ══════════════════════════════════════════
-   HUD STRIP  — 4 AWACS metrics
-══════════════════════════════════════════ */
-.hud-strip {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border-bottom: 1px solid var(--border);
-}
-
-.hud-cell {
-  background: var(--bg2);
-  padding: 10px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  position: relative;
-  overflow: hidden;
-}
-.hud-cell::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-}
-.hud-cell.cfr::before    { background: var(--acc-cfr); }
-.hud-cell.msts::before   { background: var(--acc-msts); }
-.hud-cell.iff::before    { background: var(--acc-iff); }
-.hud-cell.latency::before{ background: var(--acc-lat); }
-
-.hud-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: var(--text-dim);
-  text-transform: uppercase;
-}
-.hud-value {
-  font-family: var(--mono);
-  font-size: 22px;
-  font-weight: 400;
-  line-height: 1;
-  color: var(--text-bright);
-}
-.hud-sub {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-dim);
-  margin-top: 2px;
-}
-.hud-cell.cfr   .hud-value { color: var(--acc-cfr); }
-.hud-cell.msts  .hud-value { color: var(--acc-msts); }
-.hud-cell.iff   .hud-value { color: var(--acc-iff); }
-.hud-cell.latency .hud-value { color: var(--acc-lat); }
-
-/* IFF verdict colours */
-.iff-neutral { color: var(--text-dim) !important; }
-.iff-friend  { color: var(--c-active) !important; }
-.iff-foe     { color: var(--c-collapse) !important; }
-
-/* ══════════════════════════════════════════
-   FSM STRIP
-══════════════════════════════════════════ */
-.fsm-strip {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  padding: 0 20px;
-  height: 34px;
-  background: var(--bg3);
-  border-bottom: 1px solid var(--border);
-  overflow-x: auto;
-}
-
-.fsm-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-dim);
-  letter-spacing: 0.08em;
-  margin-right: 12px;
-  white-space: nowrap;
-}
-
-.fsm-node {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 2px;
-  cursor: default;
-  transition: all 0.25s;
-  position: relative;
-  white-space: nowrap;
-}
-.fsm-node .dot {
-  width: 7px; height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.fsm-node .name {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  color: var(--text-dim);
-  transition: color 0.25s;
-}
-
-/* Active state highlight */
-.fsm-node.active-state .name { font-weight: 700; }
-.fsm-node.active-state { background: rgba(255,255,255,0.04); }
-
-.fsm-arrow { color: var(--border2); font-size: 10px; padding: 0 3px; }
-
-/* ══════════════════════════════════════════
-   MAIN GRID
-══════════════════════════════════════════ */
-.main-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--border);
-  padding: 1px;
-  min-height: calc(100vh - 160px);
-}
-
-/* ══════════════════════════════════════════
-   TACTICAL CARD
-══════════════════════════════════════════ */
-.tcard {
-  background: var(--bg2);
-  padding: 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  position: relative;
-  min-height: 320px;
-}
-
-/* Left border = state colour */
-.tcard::before {
-  content: '';
-  position: absolute;
-  left: 0; top: 0; bottom: 0;
-  width: 3px;
-  background: var(--card-state-color, var(--c-standby));
-  transition: background 0.4s;
-}
-
-/* Card header */
-.card-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-}
-.card-symbol {
-  font-family: var(--sans);
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--text-bright);
-}
-.card-exchange {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-dim);
-  margin-top: 2px;
-}
-.card-iff-badge {
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  padding: 3px 7px;
-  border-radius: 2px;
-  border: 1px solid currentColor;
-  transition: all 0.3s;
-}
-.badge-neutral { color: var(--text-dim); border-color: var(--text-dim); }
-.badge-fnd     { color: var(--c-active); border-color: var(--c-active); }
-.badge-foe     { color: var(--c-collapse); border-color: var(--c-collapse);
-                 background: rgba(204,0,34,0.12); }
-
-/* Metrics row */
-.metrics-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-.metric-cell {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  padding: 6px 8px;
-  border-radius: 2px;
-}
-.metric-lbl {
-  font-family: var(--mono);
-  font-size: 8px;
-  color: var(--text-dim);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-bottom: 2px;
-}
-.metric-val {
-  font-family: var(--mono);
-  font-size: 14px;
-  color: var(--text-bright);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* AI toggle */
-.ai-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.toggle-label {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-dim);
-  letter-spacing: 0.06em;
-}
-.toggle-btn {
-  display: flex;
-  gap: 0;
-  border: 1px solid var(--border2);
-  border-radius: 2px;
-  overflow: hidden;
-}
-.toggle-opt {
-  font-family: var(--mono);
-  font-size: 9px;
-  padding: 3px 8px;
-  cursor: pointer;
-  background: var(--bg3);
-  color: var(--text-dim);
-  border: none;
-  transition: all 0.2s;
-  letter-spacing: 0.04em;
-}
-.toggle-opt.active {
-  background: var(--border2);
-  color: var(--text-bright);
-}
-
-/* ∇AI gradient arrow */
-.nabla-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: var(--mono);
-  font-size: 10px;
-}
-.nabla-label { color: var(--text-dim); }
-.nabla-arrow {
-  font-size: 15px;
-  transition: all 0.3s;
-}
-.nabla-val { color: var(--text-bright); }
-.nabla-pos { color: var(--c-active); }
-.nabla-neg { color: var(--c-collapse); }
-.nabla-zero{ color: var(--text-dim); }
-
-/* Sparkline */
-.sparkline-wrap {
-  position: relative;
-  height: 44px;
-}
-canvas.sparkline {
-  width: 100%;
-  height: 44px;
-  display: block;
-}
-
-/* MSTS energy matrix */
-.msts-matrix {
-  display: flex;
-  gap: 3px;
-  align-items: center;
-}
-.msts-matrix-label {
-  font-family: var(--mono);
-  font-size: 8px;
-  color: var(--text-dim);
-  margin-right: 2px;
-  white-space: nowrap;
-}
-.msts-scale-block {
-  flex: 1;
-  height: 14px;
-  border-radius: 1px;
-  border: 1px solid rgba(255,255,255,0.08);
-  transition: background 0.4s, border-color 0.4s;
-  position: relative;
-  cursor: default;
-}
-.msts-scale-block::after {
-  content: attr(data-scale);
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  font-family: var(--mono);
-  font-size: 7px;
-  color: var(--text-dim);
-  white-space: nowrap;
-  pointer-events: none;
-  margin-bottom: 2px;
-}
-
-/* Score bar */
-.score-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.score-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
-.score-bar-wrap {
-  flex: 1;
-  height: 6px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 1px;
-  overflow: hidden;
-}
-.score-bar-fill {
-  height: 100%;
-  border-radius: 1px;
-  transition: width 0.3s, background 0.3s;
-}
-.score-num {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-bright);
-  width: 36px;
-  text-align: right;
-}
-
-/* State badge */
-.state-badge {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  padding: 4px 8px;
-  border-radius: 2px;
-  border: 1px solid transparent;
-  text-align: center;
-  text-transform: uppercase;
-  transition: all 0.35s;
-}
-
-/* ══════════════════════════════════════════
-   FFI INDEX MAP PANEL
-══════════════════════════════════════════ */
-.ffi-panel {
-  grid-column: 1 / -1;
-  background: var(--bg2);
-  padding: 14px 20px;
-  border-top: 1px solid var(--border);
-}
-.ffi-title {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-dim);
-  letter-spacing: 0.1em;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-}
-.ffi-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-}
-.ffi-seg {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 2px;
-  padding: 6px 8px;
-}
-.ffi-range {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--acc-cfr);
-  margin-bottom: 2px;
-}
-.ffi-name {
-  font-family: var(--sans);
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--text-bright);
-}
-.ffi-dim {
-  font-family: var(--mono);
-  font-size: 8px;
-  color: var(--text-dim);
-  margin-top: 2px;
-}
-.ffi-bar {
-  height: 3px;
-  background: var(--border2);
-  border-radius: 1px;
-  margin-top: 5px;
-  overflow: hidden;
-}
-.ffi-bar-fill {
-  height: 100%;
-  border-radius: 1px;
-  transition: width 0.5s;
-}
-
-/* ══════════════════════════════════════════
-   FOOTER
-══════════════════════════════════════════ */
-.footer {
-  border-top: 1px solid var(--border);
-  padding: 8px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--bg3);
-}
-.footer-left {
-  font-family: var(--mono);
-  font-size: 9px;
-  color: var(--text-dim);
-  line-height: 1.7;
-}
-.footer-right {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.pill {
-  font-family: var(--mono);
-  font-size: 9px;
-  padding: 3px 8px;
-  border-radius: 20px;
-  border: 1px solid var(--border2);
-  color: var(--text-dim);
-  transition: all 0.3s;
-}
-.pill.live { border-color: var(--c-active); color: var(--c-active); animation: pulse-border 2s infinite; }
-
-/* ══════════════════════════════════════════
-   ANIMATIONS
-══════════════════════════════════════════ */
-@keyframes pulse-border {
-  0%,100% { box-shadow: 0 0 0 0 rgba(0,200,122,0.3); }
-  50%      { box-shadow: 0 0 0 4px rgba(0,200,122,0); }
-}
-
-@keyframes blink-amber {
-  0%,100% { opacity: 1; }
-  50%      { opacity: 0.35; }
-}
-@keyframes pulse-purple {
-  0%,100% { opacity: 1; text-shadow: 0 0 6px var(--c-resonance); }
-  50%      { opacity: 0.6; text-shadow: 0 0 2px var(--c-resonance); }
-}
-@keyframes breathe-gray {
-  0%,100% { opacity: 0.6; }
-  50%      { opacity: 1; }
-}
-@keyframes blink-red {
-  0%,100% { opacity: 1; }
-  40%      { opacity: 0.2; }
-}
-
-.anim-predrift   { animation: blink-amber  1.4s ease-in-out infinite; }
-.anim-resonance  { animation: pulse-purple 0.7s ease-in-out infinite; }
-.anim-standby    { animation: breathe-gray 2.2s ease-in-out infinite; }
-.anim-collapse   { animation: blink-red    0.5s linear infinite; }
-.anim-locked     { animation: blink-red    0.9s ease-in-out infinite; }
-
-/* ══════════════════════════════════════════
-   TOOLTIP
-══════════════════════════════════════════ */
-[data-tip] {
-  position: relative;
-  cursor: help;
-}
-[data-tip]:hover::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 5px);
-  left: 50%; transform: translateX(-50%);
-  background: #1a2535;
-  border: 1px solid var(--border2);
-  color: var(--text);
-  font-family: var(--mono);
-  font-size: 9px;
-  padding: 4px 8px;
-  border-radius: 2px;
-  white-space: nowrap;
-  z-index: 200;
-  pointer-events: none;
-}
-
-/* ── MSTS full tensor mini-viz ── */
-.tensor-viz {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  grid-template-rows: repeat(4, 4px);
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: 1px;
-  overflow: hidden;
-}
-.tensor-cell {
-  background: var(--bg3);
-  transition: background 0.4s;
-}
-
-/* ══════════════════════════════════════════
-   SCROLLBAR
-══════════════════════════════════════════ */
-::-webkit-scrollbar { width: 4px; height: 4px; }
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 8999; opacity: 0.4;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+}
+/* ── Mobile Block ────────────────────────────────────────────────────── */
+#mobile-block {
+  display: none; position: fixed; inset: 0; background: #000; z-index: 99999;
+  align-items: center; justify-content: center; flex-direction: column; gap: 20px; padding: 40px; text-align: center;
+}
+#mobile-block .mb-icon { font-size: 32px; color: var(--purple); letter-spacing: 4px; }
+#mobile-block p { color: #666; font-size: 11px; max-width: 280px; line-height: 1.8; border: 1px solid #222; padding: 16px; }
+#mobile-block p span { color: var(--text); display: block; margin-bottom: 8px; }
+@media (max-width: 1024px) { #mobile-block { display: flex; } }
+/* ── Layout ──────────────────────────────────────────────────────────── */
+#app { max-width: 1480px; margin: 0 auto; padding: 16px 20px 40px; }
+/* ── Header ──────────────────────────────────────────────────────────── */
+#hdr {
+  display: grid; grid-template-columns: auto 1fr auto;
+  align-items: center; gap: 20px; padding: 12px 16px;
+  border: 1px solid var(--border); background: var(--surface);
+  margin-bottom: 2px; position: relative; overflow: hidden;
+}
+#hdr::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, var(--purple), transparent 60%); }
+.hdr-title .t1 { font-size: 11px; font-weight: 700; color: var(--purple); letter-spacing: 0.2em; }
+.hdr-title .t2 { font-size: 9px; color: var(--text-dim); letter-spacing: 0.12em; margin-top: 2px; }
+.status-bar { display: flex; align-items: stretch; border: 1px solid var(--border2); }
+.stat-cell { padding: 6px 13px; border-right: 1px solid var(--border2); display: flex; flex-direction: column; gap: 2px; min-width: 138px; }
+.stat-cell:last-child { border-right: none; }
+.stat-label { font-size: 8px; color: var(--text-dim); letter-spacing: 0.15em; text-transform: uppercase; }
+.stat-value { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; transition: color 0.1s; }
+.stat-value.hot  { color: var(--purple); }
+.stat-value.live { color: var(--green); }
+.stat-sub { font-size: 8px; color: var(--text-faint); }
+.hdr-controls { display: flex; gap: 7px; align-items: center; }
+.btn {
+  background: transparent; border: 1px solid var(--border2); color: var(--text-dim);
+  font-family: var(--font); font-size: 9px; letter-spacing: 0.1em; padding: 6px 10px;
+  cursor: pointer; transition: all 0.15s; text-transform: uppercase; white-space: nowrap;
+}
+.btn:hover { border-color: var(--purple); color: var(--purple); }
+.btn.active { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); }
+.btn.peer-btn { border-color: #2a2040; color: #7c5cbf; }
+.btn.peer-btn:hover { border-color: var(--purple); color: var(--purple); }
+#ws-status { display: flex; align-items: center; gap: 5px; font-size: 8px; color: var(--text-dim); letter-spacing: 0.1em; padding: 4px 9px; border: 1px solid var(--border2); }
+#ws-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--noise); flex-shrink: 0; transition: background 0.3s, box-shadow 0.3s; }
+#ws-dot.connecting { background: var(--amber); animation: p-amber 1s infinite; }
+#ws-dot.live       { background: var(--green); box-shadow: 0 0 5px var(--green); animation: p-green 2s infinite; }
+#ws-dot.error      { background: var(--red); }
+@keyframes p-amber { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes p-green { 0%,100%{opacity:1;box-shadow:0 0 5px var(--green)} 50%{opacity:0.6;box-shadow:none} }
+/* ── Sub-header ──────────────────────────────────────────────────────── */
+#sub-hdr {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 16px; border: 1px solid var(--border); border-top: none;
+  background: #0d0d0d; margin-bottom: 12px; font-size: 8px; color: var(--text-faint); letter-spacing: 0.1em;
+}
+.pulse-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: p-green 2s ease-in-out infinite; }
+/* ── Main grid ───────────────────────────────────────────────────────── */
+#main-grid { display: grid; grid-template-columns: 1fr 180px; gap: 12px; align-items: start; }
+/* ── Elite Board ─────────────────────────────────────────────────────── */
+#elite-board { display: flex; flex-direction: column; gap: 8px; }
+.board-header { display: flex; justify-content: space-between; align-items: center; padding: 0 2px 6px; border-bottom: 1px solid var(--border); }
+.board-header h2 { font-size: 9px; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; }
+.cards-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
+/* ── Card ────────────────────────────────────────────────────────────── */
+.card { background: var(--surface); border: 1px solid var(--border); padding: 10px; position: relative; overflow: hidden; transition: border-color 0.1s; }
+.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--noise); transition: background 0.1s; }
+.card.live-feed::after { content: 'LIVE'; position: absolute; top: 5px; right: 5px; font-size: 7px; color: var(--green); letter-spacing: 0.12em; background: var(--green-dim); padding: 1px 4px; border: 1px solid var(--green); }
+.card.admitted { border-color: var(--green); }
+.card.admitted::before { background: var(--green); }
+.card.lockon { border-color: var(--purple) !important; box-shadow: 0 0 12px var(--purple-glow), inset 0 0 20px rgba(168,85,247,0.04); animation: lf 0.8s ease-out; }
+.card.lockon::before { background: var(--purple) !important; }
+@keyframes lf { 0%{box-shadow:0 0 24px var(--purple),inset 0 0 30px rgba(168,85,247,0.12)} 100%{box-shadow:0 0 12px var(--purple-glow),inset 0 0 20px rgba(168,85,247,0.04)} }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+.card-symbol { font-size: 11px; font-weight: 700; color: var(--text); letter-spacing: 0.05em; }
+.card-badge { font-size: 7px; padding: 1px 5px; border: 1px solid var(--border2); color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.1s; }
+.card-badge.lockon-badge   { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); animation: bp 0.8s ease-out; }
+.card-badge.admitted-badge { background: var(--green-dim);  border-color: var(--green);  color: var(--green); }
+@keyframes bp { 0%,100%{opacity:1} 50%{opacity:0.5} }
+.card-price  { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; margin-bottom: 2px; }
+.card-change { font-size: 9px; margin-bottom: 6px; }
+.card-change.up { color: var(--green); }
+.card-change.dn { color: var(--red); }
+.card-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 6px; }
+.metric { display: flex; flex-direction: column; gap: 1px; }
+.metric-label { font-size: 7px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; }
+.metric-val { font-size: 10px; color: var(--text-dim); }
+.metric-val.ai-admitted { color: var(--purple); }
+.metric-val.ai-rejected { color: var(--noise); }
+.sparkline-wrap { position: relative; height: 36px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
+.sparkline-wrap.research-mode { background: #080810; }
+canvas.sparkline { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* ── Right Panel ─────────────────────────────────────────────────────── */
+#right-panel { display: flex; flex-direction: column; gap: 8px; }
+.panel-box { background: var(--surface); border: 1px solid var(--border); padding: 10px; }
+.panel-title { font-size: 8px; color: var(--text-faint); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+.panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+#matrix-grid { display: grid; grid-template-columns: repeat(10,1fr); gap: 2px; }
+.matrix-dot { width: 100%; aspect-ratio: 1; background: #0d1a0d; border-radius: 1px; transition: background 0.15s, box-shadow 0.15s; animation: breathe 3s ease-in-out infinite; }
+@keyframes breathe { 0%,100%{background:#0d1a0d} 50%{background:#0f200f} }
+.matrix-dot.active        { background: var(--purple) !important; box-shadow: 0 0 4px var(--purple); animation: none; }
+.matrix-dot.recent-active { background: var(--purple-dim); animation: none; }
+#rejection-bar-wrap { margin-top: 6px; }
+.rbar-label { display: flex; justify-content: space-between; font-size: 8px; color: var(--text-dim); margin-bottom: 3px; }
+.rbar-track { height: 3px; background: var(--border); border-radius: 1px; overflow: hidden; }
+.rbar-fill  { height: 100%; background: var(--purple); transition: width 0.5s ease; border-radius: 1px; }
+.gate-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px solid var(--border); font-size: 8px; }
+.gate-row:last-child { border-bottom: none; }
+.gate-row .lbl { color: var(--text-dim); }
+.gate-row .val { font-weight: 700; }
+.val-purple { color: var(--purple); } .val-green { color: var(--green); }
+.val-noise  { color: var(--noise);  } .val-text  { color: var(--text); }
+.val-amber  { color: var(--amber);  }
+#sys-log { font-size: 8px; color: var(--text-faint); height: 80px; overflow: hidden; display: flex; flex-direction: column-reverse; gap: 1px; }
+.log-line { line-height: 1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lockon-log { color: var(--purple); } .admit-log { color: var(--green); }
+.noise-log  { color: var(--text-faint); } .ws-log { color: var(--amber); }
+.error-log  { color: var(--red); }
+/* ── Modal base ──────────────────────────────────────────────────────── */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 5000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+.modal-overlay.open { display: flex; }
+.modal-close { background: none; border: 1px solid var(--border2); color: var(--text-dim); cursor: pointer; font-family: var(--font); font-size: 9px; padding: 4px 10px; }
+.modal-close:hover { border-color: var(--purple); color: var(--purple); }
+/* ── Glossary Modal ──────────────────────────────────────────────────── */
+#glossary-modal { background: var(--surface); border: 1px solid var(--border2); width: 760px; max-height: 80vh; overflow-y: auto; position: relative; }
+#glossary-modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--purple), var(--green)); }
+.gloss-hdr { padding: 16px 20px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
+.gloss-hdr h3 { font-size: 10px; color: var(--text); letter-spacing: 0.2em; text-transform: uppercase; }
+.gloss-grid { display: grid; grid-template-columns: 1fr 1fr; }
+.gloss-col { padding: 16px 20px; }
+.gloss-col:first-child { border-right: 1px solid var(--border); }
+.gloss-col-title { font-size: 8px; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.gloss-term { margin-bottom: 12px; }
+.gloss-term dt { font-size: 9px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.gloss-term dd { font-size: 8px; color: var(--text-dim); line-height: 1.7; }
+.gloss-term dd em { color: var(--purple); font-style: normal; }
+/* ── Peer Review Modal ───────────────────────────────────────────────── */
+#peer-review-modal {
+  background: #0c0c10; border: 1px solid #2a2040;
+  width: 820px; max-height: 86vh; overflow-y: auto; position: relative;
+}
+#peer-review-modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg,#7c3aed,#a855f7,#c084fc); }
+.pr-hdr { padding: 18px 24px 14px; border-bottom: 1px solid #2a2040; display: flex; justify-content: space-between; align-items: flex-start; }
+.pr-title { font-size: 11px; font-weight: 700; color: var(--purple); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 4px; }
+.pr-sub   { font-size: 9px; color: #7c5cbf; letter-spacing: 0.08em; }
+.pr-body  { padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; }
+.pr-section { border: 1px solid #1e1830; padding: 16px; position: relative; }
+.pr-section::before { content: attr(data-n); position: absolute; top: -1px; left: 16px; font-size: 7px; color: var(--purple); letter-spacing: 0.15em; background: #0c0c10; padding: 0 6px; text-transform: uppercase; }
+.pr-section h4 { font-size: 10px; color: var(--text); margin-bottom: 10px; letter-spacing: 0.05em; }
+.pr-section p  { font-size: 9px; color: var(--text-dim); line-height: 1.8; margin-bottom: 8px; }
+.pr-section p:last-child { margin-bottom: 0; }
+.pr-section em { color: var(--purple); font-style: normal; }
+.katex-display { margin: 10px 0 !important; }
+.katex { font-size: 1.05em !important; color: #c4b5fd !important; }
+.pr-deflist { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; }
+.pr-def { display: grid; grid-template-columns: 130px 1fr; gap: 8px; font-size: 9px; border-bottom: 1px solid #1e1830; padding-bottom: 5px; }
+.pr-def:last-child { border-bottom: none; padding-bottom: 0; }
+.pr-def dt { color: var(--purple); font-weight: 700; }
+.pr-def dd { color: var(--text-dim); line-height: 1.7; }
+.pr-algo { background: #080812; border: 1px solid #1e1830; padding: 12px; font-size: 9px; color: #94a3b8; line-height: 1.9; white-space: pre; overflow-x: auto; margin-top: 8px; }
+.pr-algo .kw  { color: #a855f7; }
+.pr-algo .cm  { color: #374151; font-style: italic; }
+.pr-algo .val { color: #22c55e; }
+.pr-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 8px; }
+.pr-table th { color: var(--text-dim); font-weight: 400; text-align: left; padding: 5px 8px; border-bottom: 1px solid #2a2040; letter-spacing: 0.08em; font-size: 8px; text-transform: uppercase; }
+.pr-table td { padding: 5px 8px; border-bottom: 1px solid #1a1a1a; color: var(--text-dim); }
+.pr-table td:first-child { color: var(--text); font-weight: 700; }
+.pr-table tr:last-child td { border-bottom: none; }
+.td-green { color: var(--green) !important; } .td-purple { color: var(--purple) !important; } .td-red { color: var(--red) !important; }
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--border2); }
 </style>
 </head>
 <body>
 
-<!-- ── Top Banner ── -->
-<div class="top-banner">
-  <div class="banner-id">SYS_IDENT: <span>GIE-SOLITON-V2.5-AWACS</span> · BUILD 2026-03</div>
-  <div class="banner-title">GIE-<em>Soliton</em> V2.5 · AWACS Sensing Array</div>
-  <div class="banner-params">
-    τ=<span>0.01</span> · δ=<span>15.0 USD</span> · horizon=<span>500 ticks</span><br>
-    W=100 · ε=1e-9 · ORCID: 0009-0004-2456-9098
-  </div>
+<div id="mobile-block">
+  <div class="mb-icon">⬡ ⬡ ⬡</div>
+  <p><span>TERMINAL ACCESS RESTRICTED</span>Insufficient resolution for micro-structural analysis.<br>Research Terminal Required.<br><br><span style="color:#333;font-size:9px">gie-soliton.com/ai · GIE-Soliton V2.3</span></p>
 </div>
 
-<!-- ── HUD Strip ── -->
-<div class="hud-strip">
-  <div class="hud-cell cfr" data-tip="Weighted mean |ρ_k| across 4 auxiliary manifolds (Welford online)">
-    <div class="hud-label">CFR_SYNC · ρ_LL</div>
-    <div class="hud-value" id="hud-rho">—</div>
-    <div class="hud-sub" id="hud-rho-sub">4-channel · PRE_DRIFT threshold: 0.60</div>
+<div id="app">
+  <div id="hdr">
+    <div class="hdr-title">
+      <div class="t1">GIE-SOLITON V2.3</div>
+      <div class="t2">ATOMIC INTEGRITY · VERIFICATION LAB · Ma (2026)</div>
+    </div>
+    <div class="status-bar">
+      <div class="stat-cell">
+        <div class="stat-label">Data_Source</div>
+        <div class="stat-value live" id="stat-source">BINANCE_WS</div>
+        <div class="stat-sub">btcusdt@aggTrade</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Avg_Φ_Global</div>
+        <div class="stat-value" id="stat-phi">—</div>
+        <div class="stat-sub">rolling vol index</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Rejection_Rate</div>
+        <div class="stat-value" id="stat-rej">—</div>
+        <div class="stat-sub">AI gate · filtered</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">Entropy_H</div>
+        <div class="stat-value" id="stat-entropy">—</div>
+        <div class="stat-sub">market disorder</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">BTC Ticks/s</div>
+        <div class="stat-value" id="stat-tps">—</div>
+        <div class="stat-sub">live ws events</div>
+      </div>
+    </div>
+    <div class="hdr-controls">
+      <div id="ws-status"><div id="ws-dot"></div><span id="ws-label">CONNECTING</span></div>
+      <button class="btn" id="btn-research">Research Mode</button>
+      <button class="btn peer-btn" id="btn-peer">Peer Review</button>
+      <button class="btn" id="btn-manual">[Manual]</button>
+    </div>
   </div>
-  <div class="hud-cell msts" data-tip="Active scale count above adaptive σ_limit (N_SCALES = 6)">
-    <div class="hud-label">MSTS_RESONANCE</div>
-    <div class="hud-value" id="hud-msts">— / 6</div>
-    <div class="hud-sub" id="hud-msts-sub">W = {8, 16, 26, 40, 60, 100} · RESONANCE_K = 3</div>
-  </div>
-  <div class="hud-cell iff" data-tip="Global IFF verdict: NEUTRAL / FRIEND (Execution Damping) / FOE (Phoenix Standby)">
-    <div class="hud-label">IFF_STATUS</div>
-    <div class="hud-value iff-neutral" id="hud-iff">NEUTRAL</div>
-    <div class="hud-sub" id="hud-iff-sub">damping factor: 1.000</div>
-  </div>
-  <div class="hud-cell latency" data-tip="CPython 3.12 scalar hot-path latency per 26-tick batch. Target: < 0.035ms (Cython)">
-    <div class="hud-label">SYS_LATENCY · ms/26T</div>
-    <div class="hud-value" id="hud-lat">—</div>
-    <div class="hud-sub">CPython target &lt; 0.40ms · Cython: &lt; 0.035ms</div>
-  </div>
-</div>
 
-<!-- ── FSM Strip ── -->
-<div class="fsm-strip">
-  <div class="fsm-label">FSM STATE →</div>
-  <div class="fsm-node" id="fsm-ACTIVE">
-    <div class="dot" style="background:var(--c-active)"></div>
-    <div class="name">ACTIVE</div>
+  <div id="sub-hdr">
+    <span><span class="pulse-dot"></span>LIVE · BINANCE WS · δ=5 USD · W=100 · τ=5th pct · BTC: event-driven · others: sim</span>
+    <span id="tick-counter">TICK 0000</span>
+    <span>AI_t = M_t / (|ΔP_t| + ε) &nbsp;·&nbsp; 𝒜 = {t : AI_t ≤ τ}</span>
   </div>
-  <div class="fsm-arrow">›</div>
-  <div class="fsm-node" id="fsm-PRE_DRIFT">
-    <div class="dot" style="background:var(--c-predrift)"></div>
-    <div class="name">PRE_DRIFT</div>
-  </div>
-  <div class="fsm-arrow">›</div>
-  <div class="fsm-node" id="fsm-RESONANCE">
-    <div class="dot" style="background:var(--c-resonance)"></div>
-    <div class="name">RESONANCE</div>
-  </div>
-  <div class="fsm-arrow">›</div>
-  <div class="fsm-node" id="fsm-DRIFT_WARNING">
-    <div class="dot" style="background:var(--c-drift)"></div>
-    <div class="name">DRIFT_WARNING</div>
-  </div>
-  <div class="fsm-arrow">›</div>
-  <div class="fsm-node" id="fsm-FLASH_COLLAPSE">
-    <div class="dot" style="background:var(--c-collapse)"></div>
-    <div class="name">FLASH_COLLAPSE</div>
-  </div>
-  <div class="fsm-arrow">›</div>
-  <div class="fsm-node" id="fsm-PHOENIX_STANDBY">
-    <div class="dot" style="background:var(--c-standby)"></div>
-    <div class="name">PHOENIX_STANDBY</div>
-  </div>
-  <div class="fsm-arrow">›</div>
-  <div class="fsm-node" id="fsm-RECOVERY">
-    <div class="dot" style="background:var(--c-recovery)"></div>
-    <div class="name">RECOVERY</div>
-  </div>
-  <div class="fsm-arrow">›</div>
-  <div class="fsm-node" id="fsm-LOCKED">
-    <div class="dot" style="background:var(--c-locked)"></div>
-    <div class="name">LOCKED 🔒</div>
-  </div>
-</div>
 
-<!-- ── Main Card Grid ── -->
-<div class="main-grid" id="card-grid">
-  <!-- Injected by JS -->
-</div>
-
-<!-- ── FFI Index Map ── -->
-<div class="ffi-panel">
-  <div class="ffi-title">FFI UNIFIED INDEX MAP · 289-DIM · ALL READ ACCESS LOCKED TO DEFINED OFFSETS</div>
-  <div class="ffi-grid">
-    <div class="ffi-seg">
-      <div class="ffi-range">[0 … 59]</div>
-      <div class="ffi-name">AI_GRID</div>
-      <div class="ffi-dim">10 price levels × 6 windows · log₁₀(AI) matrix</div>
-      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b0" style="width:20%;background:var(--acc-cfr)"></div></div>
+  <div id="main-grid">
+    <div id="elite-board">
+      <div class="board-header">
+        <h2>◈ Elite Board · 12 Instruments · BTC/USDT: BINANCE LIVE</h2>
+        <span style="font-size:8px;color:var(--text-faint)">border = AI gate · Research Mode: AI_t (purple) + τ (dashed)</span>
+      </div>
+      <div class="cards-grid" id="cards-grid"></div>
     </div>
-    <div class="ffi-seg">
-      <div class="ffi-range">[60 … 251]</div>
-      <div class="ffi-name">MSTS_TENSOR</div>
-      <div class="ffi-dim">32 time-depth × 6 scales · PSD power spectrum</div>
-      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b1" style="width:35%;background:var(--acc-msts)"></div></div>
-    </div>
-    <div class="ffi-seg">
-      <div class="ffi-range">[252 … 255]</div>
-      <div class="ffi-name">CFR_RHO</div>
-      <div class="ffi-dim">4 aux stream ρ_k values · Welford bivariate</div>
-      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b2" style="width:50%;background:var(--acc-cfr)"></div></div>
-    </div>
-    <div class="ffi-seg">
-      <div class="ffi-range">[256 … 257]</div>
-      <div class="ffi-name">IFF_FEAT</div>
-      <div class="ffi-dim">AI_raw_log · AI_adjusted_log (impact-stripped)</div>
-      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b3" style="width:65%;background:var(--acc-iff)"></div></div>
-    </div>
-    <div class="ffi-seg">
-      <div class="ffi-range">[258 … 287]</div>
-      <div class="ffi-name">GRAD_FIELD</div>
-      <div class="ffi-dim">30-channel ∇AI pressure gradient field</div>
-      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b4" style="width:80%;background:var(--acc-lat)"></div></div>
-    </div>
-    <div class="ffi-seg">
-      <div class="ffi-range">[288]</div>
-      <div class="ffi-name">FSM_STATUS</div>
-      <div class="ffi-dim">8-state bit mask · V2.5 extended FSM</div>
-      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b5" style="width:100%;background:var(--c-active)"></div></div>
+    <div id="right-panel">
+      <div class="panel-box">
+        <div class="panel-title">Global Matrix · 60</div>
+        <div id="matrix-grid"></div>
+        <div id="rejection-bar-wrap">
+          <div class="rbar-label"><span>AI Gate Rejection</span><span id="rbar-pct">—</span></div>
+          <div class="rbar-track"><div class="rbar-fill" id="rbar-fill" style="width:0%"></div></div>
+        </div>
+      </div>
+      <div class="panel-box">
+        <div class="panel-title">Gate Statistics</div>
+        <div class="gate-row"><span class="lbl">BTC ticks total</span><span class="val val-amber"  id="gs-total">—</span></div>
+        <div class="gate-row"><span class="lbl">AI-Admitted</span>   <span class="val val-purple" id="gs-admitted">—</span></div>
+        <div class="gate-row"><span class="lbl">Rejected</span>      <span class="val val-noise"  id="gs-rejected">—</span></div>
+        <div class="gate-row"><span class="lbl">Lock-on events</span><span class="val val-purple" id="gs-lockon">—</span></div>
+        <div class="gate-row"><span class="lbl">FAR reduction</span> <span class="val val-green">+1.0 pp</span></div>
+        <div class="gate-row"><span class="lbl">Slippage saved</span><span class="val val-green">−4.1 bps</span></div>
+        <div class="gate-row"><span class="lbl">p-value</span>       <span class="val val-text">&lt; 0.001</span></div>
+      </div>
+      <div class="panel-box">
+        <div class="panel-title">Event Log</div>
+        <div id="sys-log"></div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- ── Footer ── -->
-<div class="footer">
-  <div class="footer-left">
-    Ma, C. (2026). The Ma-Chao Equation: Non-Hermitian Geometry and Topological Phase Transitions in Information-Fluid Hydrodynamics.<br>
-    ORCID: 0009-0004-2456-9098 · GIE-Official/AI · All read paths locked to FFI §5 offset spec.
-  </div>
-  <div class="footer-right">
-    <span class="pill">τ=0.01</span>
-    <span class="pill">δ=15 USD</span>
-    <span class="pill">W=100</span>
-    <span class="pill">horizon=500</span>
-    <span class="pill" id="sim-pill">SIM ●</span>
-    <span class="pill" id="ws-pill" style="border-color:#5a7a94;color:#5a7a94">WS ○</span>
-    <span class="pill" id="tick-rate-pill">0 tick/s</span>
+<!-- ═══ Glossary Modal ═══ -->
+<div class="modal-overlay" id="glossary-overlay">
+  <div id="glossary-modal">
+    <div class="gloss-hdr">
+      <h3>Term Reference · Dual Interpretation</h3>
+      <button class="modal-close" id="close-gloss">[ CLOSE ]</button>
+    </div>
+    <div class="gloss-grid">
+      <div class="gloss-col">
+        <div class="gloss-col-title"><span>▸</span> Commander · Intuitive</div>
+        <dl>
+          <div class="gloss-term"><dt>Momentum</dt><dd>The propulsive force that allows price to travel significant distance on thin volume. The less liquidity present, the farther the same capital can push price — a defining feature of <em>void-driven</em> displacements.</dd></div>
+          <div class="gloss-term"><dt>Lock-on</dt><dd>The instant AI_t crosses below threshold τ. Price is punching through a <em>void zone</em> — the order book lacks sufficient resting orders to absorb impact, and directional pressure tends to persist rather than revert.</dd></div>
+          <div class="gloss-term"><dt>Reversion / False Activation</dt><dd>When price moves but AI_t is elevated, it signals dense two-sided participation. Such displacements lack persistence and revert rapidly. The AI gate intercepts and suppresses them.</dd></div>
+          <div class="gloss-term"><dt>Admissibility Queue (Standby)</dt><dd>The system's resting state — scanning continuously but not triggering. All 60 instruments pulse quietly under monitoring, awaiting the next genuine liquidity-void event.</dd></div>
+        </dl>
+      </div>
+      <div class="gloss-col">
+        <div class="gloss-col-title"><span>▸</span> Researcher · Physical</div>
+        <dl>
+          <div class="gloss-term"><dt>Measure Theory</dt><dd>Atomic Integrity re-orders price displacement events by their participation density. AI_t = M_t / (|ΔP_t| + ε) defines the <em>executed mass density per unit displacement</em>, constructing a natural measure over market microstructure events.</dd></div>
+          <div class="gloss-term"><dt>Manifold Projection</dt><dd>The admissible set 𝒜 = {t : AI_t ≤ τ} forms a <em>low-density submanifold</em> of the high-dimensional market state space. Activation logic projects the raw tick stream onto this manifold before downstream execution.</dd></div>
+          <div class="gloss-term"><dt>Nonlinear Soliton</dt><dd>A price displacement propagating through an extremely thin order book with stable amplitude and velocity — analogous to a solitary wave in a low-resistance medium. Ψ_t is its real-time acceleration estimator.</dd></div>
+          <div class="gloss-term"><dt>Energy Density</dt><dd>The inverse of M_t / |ΔP_t| can be read as <em>price impact power per unit of executed volume</em>. Low AI_t corresponds to high impact efficiency — small capital produces superlinear displacement in a depleted order book.</dd></div>
+        </dl>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════
-     JAVASCRIPT ENGINE
-═══════════════════════════════════════════════════════ -->
+<!-- ═══ Peer Review Modal ═══ -->
+<div class="modal-overlay" id="peer-review-overlay">
+  <div id="peer-review-modal">
+    <div class="pr-hdr">
+      <div>
+        <div class="pr-title">🔱 GIE-Soliton V2.3 · Structural Admissibility Spec</div>
+        <div class="pr-sub">Peer Review · Deep Logic Documentation · Ma (2026) · ORCID: 0009-0004-2456-9098</div>
+      </div>
+      <button class="modal-close" id="close-peer">[ CLOSE ]</button>
+    </div>
+    <div class="pr-body">
+
+      <div class="pr-section" data-n="§ 1 — Activation Discipline">
+        <h4>From Prediction to Activation Discipline</h4>
+        <p>Most execution research conflates directional forecasting with execution gating. GIE-Soliton separates the two by introducing an <em>Admissibility Gate</em> (𝒜). We do not predict the next move; we determine whether the current market structure is structurally eligible for activation based on participation density.</p>
+        <p>The core shift: from "where will price go?" to "is this displacement structurally admissible?" This eliminates a large class of false positives generated by dense two-sided participation — moves that appear large on the price axis but carry no forward persistence.</p>
+      </div>
+
+      <div class="pr-section" data-n="§ 2 — Atomic Integrity Definition">
+        <h4>Atomic Integrity (AI) — Formal Definition</h4>
+        <p>Let $P_t$ denote the mid-price and $\text{Vol}_t$ the executed volume at time $t$. Over lookback window $W \in \mathbb{Z}_{>0}$:</p>
+        $$M_t = \sum_{i=t-W}^{t} \text{Vol}_i \qquad \Delta P_t = P_t - P_{t-W}$$
+        <p>The <em>Atomic Integrity</em> metric at time $t$ is defined as:</p>
+        $$\text{AI}_t = \frac{M_t}{|\Delta P_t| + \varepsilon}$$
+        <div class="pr-deflist">
+          <dl class="pr-def"><dt>$M_t$ — Executed Mass</dt><dd>Cumulative traded volume over window $W$. Measures total market participation supporting the observed displacement.</dd></dl>
+          <dl class="pr-def"><dt>$|\Delta P_t|$ — Displacement</dt><dd>Net absolute price movement over $W$. Captures kinematic magnitude without directional bias.</dd></dl>
+          <dl class="pr-def"><dt>$\varepsilon = 10^{-9}$</dt><dd>Numerical stabiliser preventing division-by-zero. Chosen below any physically meaningful price movement at Binance tick resolution.</dd></dl>
+          <dl class="pr-def"><dt>Low $\text{AI}_t$</dt><dd>Price moved significantly on thin volume — hallmark of a <em>liquidity void</em>. These events exhibit higher forward persistence $R_{t \to t+H}$ (Ma 2026, Figure 2).</dd></dl>
+          <dl class="pr-def"><dt>High $\text{AI}_t$</dt><dd>Dense participation underpins the displacement. High reversion probability. Gate closed.</dd></dl>
+        </div>
+        <p>The admissible set (Ma 2026, §4.1):</p>
+        $$\mathcal{A} = \bigl\{t : \text{AI}_t \leq \tau\bigr\}$$
+        <p>where $\tau$ is the $p$-th percentile of the trailing empirical distribution of $\text{AI}_t$. Primary specification: $p = 5\%$, $W = H = 100$ ticks, $\varepsilon = 10^{-9}$.</p>
+      </div>
+
+      <div class="pr-section" data-n="§ 3 — Numerical Robustness">
+        <h4>Welford's Algorithm — Non-Asymptotic Numerical Stability</h4>
+        <p>At millisecond resolution over 5,500+ instruments, naive rolling variance via $(\sum x^2) - n\bar{x}^2$ accumulates catastrophic cancellation error. All rolling statistics ($M_t$, $\Phi$, trailing $\tau$ distribution) use <em>Welford's Online Algorithm</em>:</p>
+        $$\bar{x}_n = \bar{x}_{n-1} + \frac{x_n - \bar{x}_{n-1}}{n} \qquad S_n = S_{n-1} + (x_n - \bar{x}_{n-1})(x_n - \bar{x}_n)$$
+        <p>$O(1)$ time and $O(1)$ space with zero accumulated floating-point drift. A strict requirement for tick-by-tick deployment where stability cannot be deferred to batch recomputation.</p>
+        <div class="pr-algo"><span class="kw">Algorithm</span> AtomicIntegrityGate — deterministic single-pass:
+  <span class="cm">Input:</span>  tick stream (P_t, V_t), window W, threshold tau
+  <span class="cm">State:</span>  price_deque(maxlen=W+1), cum_vol=0, ai_history=[]
+
+  <span class="kw">for each</span> tick t:
+    price_deque.append(P_t)
+    cum_vol += V_t
+    <span class="kw">if</span> deque full: cum_vol -= V_{t-W}         <span class="cm">← O(1) slide</span>
+    delta_P = |price_deque[-1] - price_deque[0]|
+    AI_t    = cum_vol / (delta_P + <span class="val">1e-9</span>)
+    tau     = percentile(ai_history, <span class="val">5</span>)          <span class="cm">← trailing dist.</span>
+    <span class="kw">if</span> AI_t &lt;= tau: <span class="kw">activate</span> downstream      <span class="cm">← t ∈ 𝒜</span></div>
+      </div>
+
+      <div class="pr-section" data-n="§ 4 — Soliton Detection & Kinematic Compensation">
+        <h4>Ψ Operator — Discrete Laplacian &amp; Adaptive Prediction Weight</h4>
+        <p>The second-order price difference $\Psi_t$ (discrete Laplacian) serves as a real-time price acceleration estimator:</p>
+        $$\Psi_t = P_t - 2P_{t-1} + P_{t-2}$$
+        <p>This is the discrete analog of $\partial^2 P / \partial t^2$. It is asymmetric under time reversal in the presence of directional flow, giving it causal sensitivity to structural breaks. The prediction weight for kinematic latency compensation is:</p>
+        $$w = \exp\!\bigl(-k \cdot |\Psi|_{\text{normalized}}\bigr)$$
+        <p>When $|\Psi_t| \approx 0$ (constant-velocity regime), $w \to 1$ and full kinematic compensation $\hat{P} = P + v\Delta t + \tfrac{1}{2}a\Delta t^2$ is applied. When $|\Psi_t|$ is large (accelerating/structural regime), $w \to 0$ and raw observed price is used — preventing the compensator from amplifying model error during regime breaks.</p>
+      </div>
+
+      <div class="pr-section" data-n="§ 5 — Empirical Results (Ma 2026)">
+        <h4>Empirical Validation — BTC/USDT · Binance Vision · Millisecond Resolution</h4>
+        <p>Primary specification: $W = H = 100$ ticks, $\tau = 5\%$, $\delta = 5$ USD microstructural noise floor. Evaluation panel: 2024-07-23 (range-bound control) and 2024-08-05 (flash-crash stress event).</p>
+        <table class="pr-table">
+          <thead><tr><th>Gate</th><th>N (activations)</th><th>FAR</th><th>Reduction</th><th>Comment</th></tr></thead>
+          <tbody>
+            <tr><td>Baseline</td><td>7,798</td><td>11.0%</td><td>—</td><td>No gate applied</td></tr>
+            <tr><td>VPIN Gate</td><td>112</td><td class="td-red">25.0%</td><td class="td-red">−14.0 pp</td><td>Degenerate under stress</td></tr>
+            <tr><td>OFI Gate</td><td>6,120</td><td>10.5%</td><td class="td-green">+0.5 pp</td><td>Moderate improvement</td></tr>
+            <tr><td>AI Gate</td><td>5,982</td><td class="td-purple">10.0%</td><td class="td-green">+1.0 pp **</td><td>Best structural gain</td></tr>
+          </tbody>
+        </table>
+        <p style="margin-top:8px">** $p < 0.001$, bootstrap $B = 3{,}000$ resamples. Under $\delta = 15$ USD: reduction rises to $+8.22$ pp (95% CI: [5.87%, 10.41%]). VWAP simulation: AI gate achieves $-4.1$ bps average slippage reduction vs. baseline. Parameter stability confirmed across 12 out-of-sample months and ETH/USDT, SOL/USDT cross-asset validation.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script>
-"use strict";
-// ── Runtime mode flags (declared early — referenced throughout) ──────────────
-let isLive        = false;            // true when Binance WS is connected
-const lastAiLogs  = new Float64Array(3);  // cross-instrument AI_log [BTC,ETH,SOL]
+/* ════════════════════════════════════════════════════════════════════════
+   GIE-Soliton V2.3 · Verification Lab
+   Live: Binance WS btcusdt@aggTrade (event-driven AI gate)
+   Sim:  Remaining 59 instruments (300ms cycle)
+   Ma (2026) — Structural Admissibility in High-Frequency Markets
+   ════════════════════════════════════════════════════════════════════════ */
 
-// ═══════════════════════════════
-// CALIBRATED CONSTANTS (0805 alignment — DO NOT MODIFY)
-// ═══════════════════════════════
-const CFG = {
-  TAU_PERCENTILE:    0.01,
-  HORIZON:           500,
-  DELTA_NOISE_FLOOR: 15.0,
-  AI_WINDOW:         100,
-  EPSILON:           1e-9,
-  CFR_THRESHOLD:     0.60,
-  MSTS_SIGMA_MULT:   2.5,
-  RESONANCE_K:       3,
-  NABLA_COLLAPSE:   -0.05,
-  RECOVERY_TICKS:    20,
-  PSI_SINGULAR:      500.0,
-  N_SCALES:          6,
-  SCALES:            [8, 16, 26, 40, 60, 100],
-  MAX_WINDOW:        100,
-  T_DEPTH:           32,
-};
+// ── Seeded RNG (must precede instruments init) ─────────────────────────
+let _seed = 20260301;
+function rng() {
+  _seed = (_seed * 1664525 + 1013904223) & 0xffffffff;
+  return ((_seed >>> 0) / 0xffffffff);
+}
 
-// FFI index mapping (V2.5 spec §5 — READ-ONLY)
-const FFI = Object.freeze({
-  AI_GRID_START:     0,    AI_GRID_END:     59,
-  MSTS_START:        60,   MSTS_END:        251,
-  CFR_START:         252,  CFR_END:         255,
-  IFF_START:         256,  IFF_END:         257,
-  GRAD_START:        258,  GRAD_END:        287,
-  FSM_STATUS:        288,
-  TOTAL_DIM:         289,
-});
+// ── Constants ──────────────────────────────────────────────────────────
+const WINDOW_W = 100;
+const TAU_PCT  = 0.05;
+const EPSILON  = 1e-9;
+const N_ELITE  = 12;
+const N_MATRIX = 60;
+const CYCLE_MS = 300;
+const HIST_LEN = 80;
+const AI_DIST  = 200;
 
-// Instruments on screen
-const INSTRUMENTS = [
-  { id: "BTC-USDT", exchange: "BINANCE SPOT",   priceSeed: 60000, volSeed: 1.8 },
-  { id: "ETH-USDT", exchange: "BINANCE FUTURES", priceSeed: 3100,  volSeed: 2.1 },
-  { id: "SOL-USDT", exchange: "BINANCE SPOT",   priceSeed: 170,   volSeed: 2.5 },
+// ── Symbols ────────────────────────────────────────────────────────────
+const SYMBOLS = [
+  'BTC/USDT','ETH/USDT','SOL/USDT','BNB/USDT',
+  '600519','000858','601318','300750',
+  'NVDA','TSLA','AAPL','GLD',
+  ...['000001','600036','601166','002594','600900','601668',
+      '000333','600276','601398','000725','002415','600030',
+      '000002','601088','600887','601857','002352','000568',
+      '600309','601688','002714','600660','000100','601601',
+      '600019','000776','601628','002304','600028','601919',
+      '000063','600050','601186','002049','600104','000895',
+      '601818','002460','600000','000069','601390','002271',
+      '600690','000786','601985','002572','600383','600426'],
 ];
 
-// FSM state → CSS variable
-const STATE_COLOR = {
-  ACTIVE:          "var(--c-active)",
-  PRE_DRIFT:       "var(--c-predrift)",
-  RESONANCE:       "var(--c-resonance)",
-  DRIFT_WARNING:   "var(--c-drift)",
-  FLASH_COLLAPSE:  "var(--c-collapse)",
-  PHOENIX_STANDBY: "var(--c-standby)",
-  RECOVERY:        "var(--c-recovery)",
-  LOCKED:          "var(--c-locked)",
-};
-const STATE_ANIM = {
-  ACTIVE:          "",
-  PRE_DRIFT:       "anim-predrift",
-  RESONANCE:       "anim-resonance",
-  DRIFT_WARNING:   "",
-  FLASH_COLLAPSE:  "anim-collapse",
-  PHOENIX_STANDBY: "anim-standby",
-  RECOVERY:        "",
-  LOCKED:          "anim-locked",
-};
-
-// ═══════════════════════════════
-// WELFORD ONLINE (zero allocation: update in-place on plain object)
-// ═══════════════════════════════
-function welfordCreate() { return { n: 0, mean: 0, M2: 0 }; }
-function welfordUpdate(w, x) {
-  // NO new objects allocated — pure mutation
-  w.n++;
-  const d = x - w.mean;
-  w.mean += d / w.n;
-  w.M2   += d * (x - w.mean);
-}
-function welfordStd(w) {
-  return w.n > 1 ? Math.sqrt(w.M2 / (w.n - 1)) : 0;
-}
-
-// ═══════════════════════════════
-// PER-INSTRUMENT STATE  (pre-allocated, no new objects in hot path)
-// ═══════════════════════════════
-function createInstrumentState(seed) {
-  const maxHist = 200;
+// ── Instrument factory ─────────────────────────────────────────────────
+function makeInst(sym, idx) {
+  const p0 = sym==='BTC/USDT'?62000 : sym==='ETH/USDT'?3240+rng()*40 :
+             sym==='SOL/USDT'?148+rng()*5 : sym==='BNB/USDT'?580+rng()*10 :
+             sym==='NVDA'?875+rng()*20 : sym==='TSLA'?175+rng()*10 :
+             sym==='AAPL'?189+rng()*8 : sym==='GLD'?195+rng()*5 :
+             50+idx*3+rng()*20;
   return {
-    price:          seed,
-    prevPrice:      seed,
-    prevPrevPrice:  seed,
-    cumVol:         0,
-    aiLog:          0,
-    aiAdj:          0,
-    nabla:          0,
-    tau:            null,
-    score:          0,
-    state:          "PHOENIX_STANDBY",
-    rhoLL:          0,
-    iffVerdict:     "NEUTRAL",
-    dampingFactor:  1,
-    mstsPSD:        new Float64Array(6),   // pre-allocated
-    mstsEnergy:     new Float64Array(6),   // rolling energy E[s]
-    psiSqBuf:       new Float64Array(100), // Ψ² circular buffer
-    psiHead:        0,
-    psiCount:       0,
-    mstsSigmaLimit: 1,
-    mstsSigmaWel:   welfordCreate(),
-    aiLogSorted:    [],                    // bisect-maintained (JS array, pre-grown)
-    aiLogHistory:   new Float64Array(500), // ring buffer for sorted maintenance
-    aiHistHead:     0,
-    aiHistCount:    0,
-    welAI:          welfordCreate(),
-    tickCount:      0,
-    tickInBatch:    0,
-    // Sparkline history (ring buffer, 80 points)
-    sparkBuf:       new Float64Array(80),
-    sparkHead:      0,
-    sparkCount:     0,
-    // Price ring for Ψ
-    priceRing:      new Float64Array(3),
-    priceHead:      0,
-    priceCount:     0,
-    // CFR bivariate Welford: 4 channels × 6 fields
-    cfrBiv:         new Float64Array(24),
-    cfrRho:         new Float64Array(4),
-    cfrLastUpd:     new Int32Array(4).fill(-999),
-    cfrPrevAux:     new Float64Array(4),
-    cfrPrevPrimary: 0,
-    // Nabla history
-    lastAiLog:      0,
-    prevNabla:      0,
-    // AI_adj fields
-    volSelfSum:     0,
-    // Score history
-    scoreHistory:   new Float64Array(80),
-    scoreHead:      0,
-    // Display toggle: "raw" | "adj"
-    aiDisplayMode:  "raw",
-    // Sparkline canvas ref (filled after DOM render)
-    sparkCanvas:    null,
-    sparkCtx:       null,
-    scoreCanvas:    null,
-    scoreCtx:       null,
-    // Tensor snapshot (last T_DEPTH × N_SCALES stored in msts already)
-    tensorBuf:      new Float64Array(CFG.T_DEPTH * CFG.N_SCALES),
-    tensorHead:     0,
+    sym, price:p0, prevPrice:p0, priceHist:[], aiHist:[], tauHist:[],
+    aiDistrib:[], cumVol:0, volBuf:[], priceBuf:[],
+    admitted:false, lockon:false, lockonTimer:0,
+    phi:0.5+rng()*2, move:0, aiVal:null, tau:null,
+    isLive: sym==='BTC/USDT',
   };
 }
+const instruments = SYMBOLS.map(makeInst);
+const btc = instruments[0];
 
-// Global state array
-const instStates = INSTRUMENTS.map(inst => createInstrumentState(inst.priceSeed));
+// ── Counters ───────────────────────────────────────────────────────────
+let researchMode = false, uiTick = 0;
+let btcTotal = 0, btcAdmit = 0, btcReject = 0, gsLockon = 0;
+let tpsCount = 0, tpsDisplay = 0;
+let cardEls = [], matrixDots = [];
 
-// Global HUD Welford (pre-allocated, never recreated)
-const hudWelLat = welfordCreate();
+// ── Core AI gate — O(1) per tick ───────────────────────────────────────
+function processTickAI(inst, price, vol) {
+  inst.prevPrice = inst.price;
+  inst.price     = price;
+  inst.move      = price - inst.prevPrice;
 
-// ═══════════════════════════════
-// BISECT HELPERS  (pure functions, zero allocation for primitives)
-// ═══════════════════════════════
-function bisectLeft(arr, val) {
-  let lo = 0, hi = arr.length;
-  while (lo < hi) {
-    const mid = (lo + hi) >>> 1;
-    if (arr[mid] < val) lo = mid + 1; else hi = mid;
-  }
-  return lo;
-}
-function bisectInsort(arr, val) {
-  const i = bisectLeft(arr, val);
-  arr.splice(i, 0, val);   // O(n) — acceptable for JS demonstration
-}
-
-// ═══════════════════════════════
-// MSTS: compute PSD for one tick  (unrolled, zero allocation)
-// ═══════════════════════════════
-function mstsTick(st, price) {
-  const ring = st.priceRing;
-  const h    = (st.priceHead + 1) % 3;
-  ring[h]    = price;
-  st.priceHead = h;
-  if (st.priceCount < 3) { st.priceCount++; }
-
-  let psiT = 0, psiSq = 0;
-  if (st.priceCount >= 3) {
-    const p0 = ring[h];
-    const p1 = ring[(h + 2) % 3];   // t-1
-    const p2 = ring[(h + 1) % 3];   // t-2
-    psiT  = p0 - 2 * p1 + p2;
-    psiSq = psiT * psiT;
+  inst.priceBuf.push(price);
+  inst.volBuf.push(vol);
+  inst.cumVol += vol;
+  if (inst.priceBuf.length > WINDOW_W + 1) {
+    inst.cumVol -= inst.volBuf.shift();
+    inst.priceBuf.shift();
   }
 
-  const newHead = (st.psiHead + 1) % CFG.MAX_WINDOW;
-  st.psiSqBuf[newHead] = psiSq;
-  st.psiHead  = newHead;
-  if (st.psiCount < CFG.MAX_WINDOW) st.psiCount++;
-  const cnt = st.psiCount;
-  const buf = st.psiSqBuf;
-
-  // Unrolled 6-scale energy update
-  let e0=st.mstsEnergy[0]+psiSq, e1=st.mstsEnergy[1]+psiSq,
-      e2=st.mstsEnergy[2]+psiSq, e3=st.mstsEnergy[3]+psiSq,
-      e4=st.mstsEnergy[4]+psiSq, e5=st.mstsEnergy[5]+psiSq;
-  if (cnt >   8) e0 -= buf[(newHead -   8 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
-  if (cnt >  16) e1 -= buf[(newHead -  16 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
-  if (cnt >  26) e2 -= buf[(newHead -  26 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
-  if (cnt >  40) e3 -= buf[(newHead -  40 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
-  if (cnt >  60) e4 -= buf[(newHead -  60 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
-  if (cnt > 100) e5 -= buf[(newHead - 100 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
-  if (e0<0) e0=0; if (e1<0) e1=0; if (e2<0) e2=0;
-  if (e3<0) e3=0; if (e4<0) e4=0; if (e5<0) e5=0;
-  st.mstsEnergy[0]=e0; st.mstsEnergy[1]=e1; st.mstsEnergy[2]=e2;
-  st.mstsEnergy[3]=e3; st.mstsEnergy[4]=e4; st.mstsEnergy[5]=e5;
-
-  const psd0=e0/8, psd1=e1/16, psd2=e2/26, psd3=e3/40, psd4=e4/60, psd5=e5/100;
-  st.mstsPSD[0]=psd0; st.mstsPSD[1]=psd1; st.mstsPSD[2]=psd2;
-  st.mstsPSD[3]=psd3; st.mstsPSD[4]=psd4; st.mstsPSD[5]=psd5;
-
-  // Write to tensor (FFI [60..251])
-  const tBase = st.tensorHead * CFG.N_SCALES;
-  st.tensorBuf[tBase]=psd0; st.tensorBuf[tBase+1]=psd1; st.tensorBuf[tBase+2]=psd2;
-  st.tensorBuf[tBase+3]=psd3; st.tensorBuf[tBase+4]=psd4; st.tensorBuf[tBase+5]=psd5;
-  st.tensorHead = (st.tensorHead + 1) % CFG.T_DEPTH;
-
-  // Welford on mean PSD for adaptive σ_limit
-  const mPSD = (psd0+psd1+psd2+psd3+psd4+psd5) / 6;
-  welfordUpdate(st.mstsSigmaWel, mPSD);
-  if (st.mstsSigmaWel.n >= 20) {
-    st.mstsSigmaLimit = st.mstsSigmaWel.mean + CFG.MSTS_SIGMA_MULT * welfordStd(st.mstsSigmaWel);
+  let aiVal = null;
+  if (inst.priceBuf.length === WINDOW_W + 1) {
+    const dP = Math.abs(inst.priceBuf.at(-1) - inst.priceBuf[0]);
+    aiVal = inst.cumVol / (dP + EPSILON);
+    inst.aiDistrib.push(Math.min(aiVal, 10));
+    if (inst.aiDistrib.length > AI_DIST) inst.aiDistrib.shift();
   }
-
-  let activeCnt = 0;
-  const sl = st.mstsSigmaLimit;
-  if(psd0>sl)activeCnt++; if(psd1>sl)activeCnt++; if(psd2>sl)activeCnt++;
-  if(psd3>sl)activeCnt++; if(psd4>sl)activeCnt++; if(psd5>sl)activeCnt++;
-  return { resonance: activeCnt >= CFG.RESONANCE_K, activeCnt, psiT };
-}
-
-// ═══════════════════════════════
-// CFR: bivariate Welford (deferred sqrt at batch end)
-// ═══════════════════════════════
-function cfrTick(st, primaryAiLog, auxAiLogs, tick, isBatchEnd) {
-  const biv = st.cfrBiv;
-  const rho = st.cfrRho;
-  const n_aux = 4;
-  const stale = 2;
-
-  for (let k = 0; k < n_aux; k++) {
-    const age = tick - st.cfrLastUpd[k];
-    let y;
-    if (k < auxAiLogs.length) {
-      st.cfrLastUpd[k] = tick;
-      y = auxAiLogs[k];
-    } else {
-      if (age > stale) continue;
-      y = st.cfrPrevAux[k];
-    }
-    if (tick - st.cfrLastUpd[k] > stale) continue;
-
-    const b = k * 6;
-    const nNew = biv[b] + 1;
-    biv[b] = nNew;
-    const dx = primaryAiLog - biv[b+1];
-    const dy = y - biv[b+2];
-    const invN = 1 / nNew;
-    biv[b+1] += dx * invN;
-    biv[b+2] += dy * invN;
-    const dx2 = primaryAiLog - biv[b+1];
-    const dy2 = y - biv[b+2];
-    biv[b+3] += dx * dx2;
-    biv[b+4] += dy * dy2;
-    biv[b+5] += dx * dy2;
-    st.cfrPrevAux[k] = y;
-  }
-  st.cfrPrevPrimary = primaryAiLog;
-
-  if (!isBatchEnd) return st.rhoLL || 0;
-
-  // Deferred sqrt — only at 26th tick (CFR spec: deferred sqrt)
-  let rhoSum = 0, wSum = 0, leadingK = -1;
-  for (let k = 0; k < n_aux; k++) {
-    const age = tick - st.cfrLastUpd[k];
-    if (age > stale) { rho[k] = 0; continue; }
-    const b = k * 6;
-    const nk = biv[b];
-    if (nk < 30) continue;
-    const denom = biv[b+3] * biv[b+4];
-    let rk = 0;
-    if (denom > 1e-14) {
-      rk = biv[b+5] / Math.sqrt(denom);
-      if (rk >  1) rk =  1;
-      if (rk < -1) rk = -1;
-    }
-    rho[k] = rk;
-    rhoSum += Math.abs(rk);
-    wSum   += 1;
-    const auxDecl   = st.cfrPrevAux[k] < biv[b+2] - 0.02;
-    const primStable = primaryAiLog >= st.cfrPrevPrimary - 0.01;
-    if (rk > CFG.CFR_THRESHOLD && auxDecl && primStable && leadingK < 0) leadingK = k;
-  }
-  const rhoLL = wSum > 0 ? rhoSum / wSum : 0;
-  st.rhoLL = rhoLL;
-  st.cfrPreDrift = (leadingK >= 0) && (rhoLL > CFG.CFR_THRESHOLD);
-  return rhoLL;
-}
-
-// ═══════════════════════════════
-// IFF: O(1) rolling vol self strip
-// ═══════════════════════════════
-function iffTick(st, cumVol, deltaP, volSelf, aiRawLog) {
-  const iSelf  = 1e-5 * volSelf;
-  const mAdj   = Math.max(cumVol - volSelf * 0.1, CFG.EPSILON);
-  const dpAdj  = Math.abs(deltaP - iSelf);
-  const aiAdj  = mAdj / (dpAdj + CFG.EPSILON);
-  const aiAdjLog = Math.log10(Math.max(aiAdj, CFG.EPSILON));
-  st.aiAdj = aiAdjLog;
-
-  const THR = -3.0;
-  const rawColl = aiRawLog < THR;
-  const adjColl = aiAdjLog < THR;
-  const margin  = aiAdjLog - aiRawLog;
-
-  let verdict = "NEUTRAL";
-  if (rawColl && !adjColl && margin >= 0.5) verdict = "FRIEND";
-  else if (rawColl && adjColl)              verdict = "FOE";
-  const volFrac = volSelf / Math.max(cumVol, CFG.EPSILON);
-  const damp    = verdict === "FRIEND" ? Math.max(0, 1 - volFrac * 2.5) : 1;
-  return { verdict, damp, aiAdjLog };
-}
-
-// ═══════════════════════════════
-// MAIN PHYSICS TICK  (called every simulated tick)
-// ═══════════════════════════════
-function physicsTick(st, price, vol, tick) {
-  const isBatchEnd = (st.tickInBatch === 25);
-  st.tickInBatch = (st.tickInBatch + 1) % 26;
-  st.tickCount++;
-
-  // ── Price ring → Ψ (via MSTS) ──────────────────────────────────────────
-  const mstsResult = mstsTick(st, price);
-
-  // ── AI_log ─────────────────────────────────────────────────────────────
-  // Rolling window: push price, maintain cumVol, compute ΔP
-  const W = CFG.AI_WINDOW;
-  st.cumVol = Math.max(st.cumVol * 0.98 + vol, CFG.EPSILON);   // exponential decay approx
-  const deltaP = Math.abs(price - st.prevPrice);
-  const aiRaw  = st.cumVol / (deltaP + CFG.EPSILON);
-  const aiLog  = Math.log10(Math.max(aiRaw, CFG.EPSILON));
-
-  // ── ∇AI ────────────────────────────────────────────────────────────────
-  const nabla = (aiLog - st.lastAiLog) / 300;   // per µs (300µs per tick approx)
-  st.nabla    = nabla;
-  st.lastAiLog = aiLog;
-  st.aiLog     = aiLog;
-
-  // ── τ via bisect ────────────────────────────────────────────────────────
-  welfordUpdate(st.welAI, aiLog);
-  if (st.aiHistCount >= 500) {
-    const oldest = st.aiLogHistory[st.aiHistHead];
-    const pos = bisectLeft(st.aiLogSorted, oldest);
-    if (pos < st.aiLogSorted.length && st.aiLogSorted[pos] === oldest)
-      st.aiLogSorted.splice(pos, 1);
-  }
-  st.aiLogHistory[st.aiHistHead] = aiLog;
-  st.aiHistHead = (st.aiHistHead + 1) % 500;
-  if (st.aiHistCount < 500) st.aiHistCount++;
-  bisectInsort(st.aiLogSorted, aiLog);
 
   let tau = null;
-  const n_sorted = st.aiLogSorted.length;
-  if (n_sorted >= 50) {
-    const idx = Math.max(0, Math.floor(CFG.TAU_PERCENTILE * n_sorted) - 1);
-    tau = st.aiLogSorted[idx];
-  }
-  st.tau = tau;
-
-  // ── IFF ─────────────────────────────────────────────────────────────────
-  const iffR = iffTick(st, st.cumVol, deltaP, vol * 0.02, aiLog);
-  st.iffVerdict    = iffR.verdict;
-  st.dampingFactor = iffR.damp;
-
-  // ── CFR aux manifolds ───────────────────────────────────────────────────
-  // LIVE mode: use real cross-instrument AI_log values (BTC/ETH/SOL互为 aux)
-  // SIM  mode: synthetic ±gaussian fallback (σ=0.0001, per spec §4 ADDENDUM §3)
-  const auxAis = isLive
-    ? [
-        lastAiLogs[0] || aiLog,   // BTC AI_log
-        lastAiLogs[1] || aiLog,   // ETH AI_log
-        lastAiLogs[2] || aiLog,   // SOL AI_log
-        aiLog + (Math.random()-0.5)*0.0001,  // 4th: small-noise proxy
-      ]
-    : [
-        aiLog + (Math.random()-0.5)*0.0001,
-        aiLog + (Math.random()-0.5)*0.0001,
-        aiLog + (Math.random()-0.5)*0.0001,
-        aiLog + (Math.random()-0.5)*0.0001,
-      ];
-  cfrTick(st, aiLog, auxAis, tick, isBatchEnd);
-
-  // ── Physical lock checks ─────────────────────────────────────────────────
-  const singularity = aiRaw < 1e-6;
-  const hardFloor   = aiLog < -3.0;
-  if (singularity || hardFloor) {
-    st.state  = "LOCKED";
-    st.score  = 0;
-    st.prevPrice = price;
-    return;
+  if (inst.aiDistrib.length >= 20) {
+    const s = [...inst.aiDistrib].sort((a,b)=>a-b);
+    tau = s[Math.floor(TAU_PCT * s.length)];
   }
 
-  // ── FSM transitions (V2.5 extended) ─────────────────────────────────────
-  if (mstsResult.resonance) {
-    st.state = "RESONANCE";
-    st.score = 0;   // KILL SWITCH: force to 0 during RESONANCE
-    st.prevPrice = price;
-    return;
-  }
-  if (Math.abs(mstsResult.psiT) > CFG.PSI_SINGULAR) {
-    st.state = "LOCKED";
-    st.score = 0;
-    st.prevPrice = price;
-    return;
-  }
-  if (iffR.verdict === "FOE") {
-    st.state = "PHOENIX_STANDBY";
-    st.score = 0;
-    st.prevPrice = price;
-    return;
-  }
+  const prev = inst.admitted;
+  inst.admitted    = aiVal !== null && tau !== null && aiVal <= tau;
+  inst.lockon      = inst.admitted && !prev;
+  if (inst.lockon)          inst.lockonTimer = 6;
+  if (inst.lockonTimer > 0) inst.lockonTimer--;
+  inst.aiVal = aiVal;
+  inst.tau   = tau;
 
-  // V2.4 inherited transitions
-  const negNabla = nabla < CFG.NABLA_COLLAPSE;
-  if (st.state === "PHOENIX_STANDBY") {
-    // stay until aiLog recovers
-    if (aiLog > -1.0 && nabla >= 0) st._recStreak = (st._recStreak||0) + 1;
-    else                             st._recStreak = 0;
-    if ((st._recStreak||0) >= CFG.RECOVERY_TICKS) st.state = "RECOVERY";
-    st.score = 0;
-    st.prevPrice = price;
-    return;
-  }
-  if (st.state === "RECOVERY") {
-    if (aiLog > -1.0 && nabla >= 0) st._recStreak = (st._recStreak||0) + 1;
-    else { st.state = "PHOENIX_STANDBY"; st._recStreak = 0; st.score = 0; st.prevPrice = price; return; }
-    if ((st._recStreak||0) >= CFG.RECOVERY_TICKS) { st.state = "ACTIVE"; st._recStreak = 0; }
-    st.score = 0;
-    st.prevPrice = price;
-    return;
-  }
-  if (aiLog < -3.0) {
-    st.state = "FLASH_COLLAPSE";
-    st.score = 0;
-    st.prevPrice = price;
-    return;
-  }
-  if (st.state === "FLASH_COLLAPSE") { st.state = "PHOENIX_STANDBY"; st.score = 0; st.prevPrice = price; return; }
+  const scale = inst.price > 10000 ? 80 : inst.price > 100 ? 3 : 1;
+  inst.phi = 0.9 * inst.phi + 0.1 * Math.abs(inst.move) / (scale + EPSILON);
 
-  if (st.cfrPreDrift) {
-    st.state = "PRE_DRIFT";
-  } else if (negNabla) {
-    st.state = "DRIFT_WARNING";
-  } else if (st.state === "PRE_DRIFT" && !st.cfrPreDrift) {
-    st.state = "ACTIVE";
-  } else if (st.state === "DRIFT_WARNING" && !negNabla) {
-    st.state = "ACTIVE";
-  } else if (st.state !== "PRE_DRIFT" && st.state !== "DRIFT_WARNING") {
-    st.state = "ACTIVE";
-  }
-
-  // ── Gate & score ─────────────────────────────────────────────────────────
-  const admitted = (tau !== null) && (aiLog <= tau);
-  let score = admitted ? 1.0 : 0.0;
-  score *= iffR.damp;
-  if (st.cfrPreDrift) score *= Math.max(0, 1 - 0.5 * (st.rhoLL || 0));
-  st.score = Math.max(0, Math.min(1, score));
-
-  // ── Sparkline update ─────────────────────────────────────────────────────
-  st.sparkBuf[st.sparkHead] = aiLog;
-  st.sparkHead  = (st.sparkHead + 1) % 80;
-  if (st.sparkCount < 80) st.sparkCount++;
-
-  st.scoreHistory[st.scoreHead] = st.score;
-  st.scoreHead = (st.scoreHead + 1) % 80;
-
-  st.prevPrevPrice = st.prevPrice;
-  st.prevPrice = price;
-
-  // ── SIM 模式下同步 lastAiLogs（LIVE 模式由 WS onmessage 负责）──────────────
-  if (!isLive) {
-    INSTRUMENTS.forEach((inst, k) => {
-      if (inst.id === INSTRUMENTS[0].id) lastAiLogs[0] = instStates[0].aiLog;
-      if (inst.id === INSTRUMENTS[1].id) lastAiLogs[1] = instStates[1].aiLog;
-      if (inst.id === INSTRUMENTS[2].id) lastAiLogs[2] = instStates[2].aiLog;
-    });
-  }
+  inst.priceHist.push(price);
+  if (aiVal !== null) inst.aiHist.push(Math.min(aiVal,10));
+  if (tau   !== null) inst.tauHist.push(tau);
+  if (inst.priceHist.length > HIST_LEN) inst.priceHist.shift();
+  if (inst.aiHist.length    > HIST_LEN) inst.aiHist.shift();
+  if (inst.tauHist.length   > HIST_LEN) inst.tauHist.shift();
 }
 
-// ═══════════════════════════════
-// PRICE SIMULATOR  (fallback when WS unavailable)
-// ═══════════════════════════════
-const simRNG = (function() {
-  let _s = 42;
-  return function() {
-    _s = (_s * 1664525 + 1013904223) & 0xffffffff;
-    return ((_s >>> 1) / 2147483647.5) - 1;
-  };
-})();
-function randn() {
-  const u = (simRNG() + 1) / 2 + 1e-10;
-  const v = (simRNG() + 1) / 2;
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+// ── Binance WebSocket ──────────────────────────────────────────────────
+let ws = null, wsTimer = null;
+
+function wsSetStatus(state) {
+  const dot = document.getElementById('ws-dot');
+  const lbl = document.getElementById('ws-label');
+  dot.className = state;
+  lbl.textContent = {connecting:'CONNECTING', live:'LIVE', error:'ERROR · RETRY'}[state]||'OFFLINE';
+  const src = document.getElementById('stat-source');
+  src.textContent = state==='live' ? 'BINANCE_WS_LIVE' : 'BINANCE_WS';
+  src.className   = `stat-value ${state==='live'?'live':'hot'}`;
 }
 
-const prices = INSTRUMENTS.map(i => i.priceSeed);
-const vols   = INSTRUMENTS.map(i => i.volSeed);
-
-// ═══════════════════════════════
-// BINANCE WEBSOCKET  (real millisecond aggTrade)
-// ═══════════════════════════════
-// Combined stream: BTC / ETH / SOL aggTrade
-// URL: wss://stream.binance.com:9443/stream?streams=s1@aggTrade/s2@aggTrade/...
-// aggTrade payload: { e:"aggTrade", s:"BTCUSDT", p:"60000.1", q:"0.01", T:1234567890123 }
-
-const WS_SYMBOLS = ["btcusdt", "ethusdt", "solusdt"];
-const SYMBOL_IDX = { "BTCUSDT": 0, "ETHUSDT": 1, "SOLUSDT": 2 };
-
-// DOM refs for status pills (cached once)
-const domSimPill      = document.getElementById("sim-pill");
-const domWsPill       = document.getElementById("ws-pill");
-const domTickRatePill = document.getElementById("tick-rate-pill");
-
-// Live mode flag + tick rate counter
-// isLive declared at top of script
-let ticksThisSec   = 0;
-let tickRateTimer  = 0;
-
-// Per-symbol last AI log (for cross-instrument CFR aux manifolds)
-// declared at top of script — isLive, lastAiLogs
-let ws = null;
-let wsRetryDelay = 1000;   // ms, exponential backoff
-let wsRetryTimer = null;
-
-function wsConnect() {
-  const streams = WS_SYMBOLS.map(s => `${s}@aggTrade`).join("/");
-  const url = `wss://stream.binance.com:9443/stream?streams=${streams}`;
-
-  ws = new WebSocket(url);
+function connectBinance() {
+  if (ws) { try { ws.close(); } catch(e){} }
+  wsSetStatus('connecting');
+  addLog('WS → wss://stream.binance.com:9443/ws/btcusdt@aggTrade', 'ws');
+  ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
 
   ws.onopen = () => {
-    isLive = true;
-    wsRetryDelay = 1000;
-    domWsPill.textContent  = "WS ●";
-    domWsPill.style.borderColor = "var(--c-active)";
-    domWsPill.style.color       = "var(--c-active)";
-    domSimPill.textContent = "LIVE ●";
-    domSimPill.className   = "pill live";
-    console.log("[GIE-WS] Connected →", url);
+    wsSetStatus('live');
+    addLog('Binance WS connected · btcusdt@aggTrade live', 'admit');
   };
 
-  ws.onmessage = (evt) => {
-    // ── Parse aggTrade (zero-allocation: reuse locals) ──────────────────────
-    let msg;
-    try { msg = JSON.parse(evt.data); } catch { return; }
+  ws.onmessage = (ev) => {
+    try {
+      const d = JSON.parse(ev.data);
+      const price = parseFloat(d.p), qty = parseFloat(d.q);
+      if (!isFinite(price)||!isFinite(qty)) return;
 
-    const data = msg.data;           // combined stream wraps in {stream, data}
-    if (!data || data.e !== "aggTrade") return;
-
-    const idx = SYMBOL_IDX[data.s];
-    if (idx === undefined) return;
-
-    const price   = parseFloat(data.p);
-    const qty     = parseFloat(data.q);
-    const ts_us   = data.T * 1000;   // ms → µs (align with paper dataset)
-
-    if (!isFinite(price) || price <= 0 || !isFinite(qty)) return;
-
-    prices[idx] = price;
-    vols[idx]   = qty;
-
-    // Feed real data into physics engine
-    physicsTick(instStates[idx], price, qty, globalTick);
-    globalTick++;
-    ticksThisSec++;
-
-    // Update lastAiLogs for cross-instrument CFR (real aux manifolds)
-    lastAiLogs[idx] = instStates[idx].aiLog;
-
-    // Inject real cross-instrument AI logs into CFR for all instruments
-    // (replaces the ±0.0002 fake noise — now uses actual correlated flows)
-    // This is done lazily: cfrTick already ran inside physicsTick using
-    // simulated aux; override happens on next batch boundary via auxOverride below.
+      processTickAI(btc, price, qty);
+      btcTotal++; tpsCount++;
+      if (btc.admitted) btcAdmit++; else btcReject++;
+      if (btc.lockon) {
+        gsLockon++;
+        addLog(`[BTC LIVE] LOCK-ON  AI=${btc.aiVal?.toFixed(3)} ≤ τ=${btc.tau?.toFixed(3)}  P=${price.toFixed(2)}`, 'lockon');
+      }
+    } catch(e) {}
   };
 
-  ws.onerror = (e) => {
-    console.warn("[GIE-WS] Error:", e);
-  };
-
-  ws.onclose = () => {
-    isLive = false;
-    domWsPill.textContent  = "WS ○";
-    domWsPill.style.borderColor = "#c62828";
-    domWsPill.style.color       = "#c62828";
-    domSimPill.textContent = "SIM ●";
-    domSimPill.className   = "pill";
-    console.warn(`[GIE-WS] Disconnected. Retry in ${wsRetryDelay}ms`);
-    // Exponential backoff reconnect (cap at 30s)
-    clearTimeout(wsRetryTimer);
-    wsRetryTimer = setTimeout(() => {
-      wsRetryDelay = Math.min(wsRetryDelay * 2, 30000);
-      wsConnect();
-    }, wsRetryDelay);
+  ws.onerror = () => { wsSetStatus('error'); addLog('WS error — reconnect in 5s', 'error'); };
+  ws.onclose = (e) => {
+    if (e.code !== 1000) {
+      wsSetStatus('error');
+      addLog(`WS closed (${e.code}) — reconnect in 5s`, 'error');
+      clearTimeout(wsTimer);
+      wsTimer = setTimeout(connectBinance, 5000);
+    }
   };
 }
 
-// ── Tick-rate display (updated every 1 second) ──────────────────────────────
-function startTickRateTimer() {
-  setInterval(() => {
-    domTickRatePill.textContent = `${ticksThisSec} tick/s`;
-    ticksThisSec = 0;
-  }, 1000);
+setInterval(() => { tpsDisplay = tpsCount; tpsCount = 0; }, 1000);
+
+// ── Simulation (non-BTC) ───────────────────────────────────────────────
+function simulateDynamics(inst) {
+  const spike = rng() < 0.04, trend = rng() < 0.08;
+  const scale = inst.price > 10000 ? 80 : inst.price > 100 ? 3 : 1.2;
+  let move, vol;
+  if (spike)      { move=(rng()>.5?1:-1)*scale*(2+rng()*4);    vol=0.01+rng()*0.08; }
+  else if (trend) { move=(rng()>.5?1:-1)*scale*(0.5+rng()*1.5); vol=0.5+rng()*2.0; }
+  else            { move=(rng()-0.5)*scale*0.6;                  vol=0.8+rng()*3.5; }
+  processTickAI(inst, Math.max(inst.price*0.95, inst.price+move), vol);
 }
 
-// ═══════════════════════════════
-// DOM CONSTRUCTION  (done once at init — no allocations in hot path)
-// ═══════════════════════════════
-const MSTS_SCALE_LABELS = ["W8","W16","W26","W40","W60","W100"];
-
+// ── DOM builders ───────────────────────────────────────────────────────
 function buildCards() {
-  const grid = document.getElementById("card-grid");
-  INSTRUMENTS.forEach((inst, i) => {
-    const st = instStates[i];
-    const card = document.createElement("div");
-    card.className = "tcard";
-    card.id = `card-${i}`;
-    card.innerHTML = `
-      <div class="card-header">
-        <div>
-          <div class="card-symbol">${inst.id}</div>
-          <div class="card-exchange">${inst.exchange}</div>
-        </div>
-        <div id="iff-badge-${i}" class="card-iff-badge badge-neutral">NEUTRAL</div>
+  const g = document.getElementById('cards-grid');
+  g.innerHTML = ''; cardEls = [];
+  for (let i = 0; i < N_ELITE; i++) {
+    const inst = instruments[i];
+    const el = document.createElement('div');
+    el.className = `card${inst.isLive?' live-feed':''}`;
+    el.innerHTML = `
+      <div class="card-top"><div class="card-symbol">${inst.sym}</div><div class="card-badge" id="badge-${i}">WATCH</div></div>
+      <div class="card-price" id="price-${i}">—</div>
+      <div class="card-change" id="change-${i}">—</div>
+      <div class="card-metrics">
+        <div class="metric"><div class="metric-label">AI_t</div><div class="metric-val" id="ai-${i}">—</div></div>
+        <div class="metric"><div class="metric-label">τ (gate)</div><div class="metric-val" id="tau-${i}">—</div></div>
+        <div class="metric"><div class="metric-label">Φ (vol)</div><div class="metric-val" id="phi-${i}">—</div></div>
+        <div class="metric"><div class="metric-label">|ΔP|</div><div class="metric-val" id="dp-${i}">—</div></div>
       </div>
-      <div class="metrics-row">
-        <div class="metric-cell" data-tip="log₁₀(AI_t) = log₁₀(M_t/(|ΔP_t|+ε))">
-          <div class="metric-lbl">AI_LOG</div>
-          <div class="metric-val" id="m-ailog-${i}">—</div>
-        </div>
-        <div class="metric-cell" data-tip="∇AI adjusted after IFF self-impact strip">
-          <div class="metric-lbl" id="m-adj-lbl-${i}">AI_ADJ</div>
-          <div class="metric-val" id="m-aiadj-${i}">—</div>
-        </div>
-        <div class="metric-cell" data-tip="Admissibility score ∈ [0,1] after AWACS fusion">
-          <div class="metric-lbl">SCORE</div>
-          <div class="metric-val" id="m-score-${i}">—</div>
-        </div>
-      </div>
-      <div class="ai-toggle">
-        <div class="toggle-label">AI MODE:</div>
-        <div class="toggle-btn">
-          <button class="toggle-opt active" id="tog-raw-${i}" onclick="setAiMode(${i},'raw')">RAW</button>
-          <button class="toggle-opt"        id="tog-adj-${i}" onclick="setAiMode(${i},'adj')">ADJ</button>
-        </div>
-      </div>
-      <div class="sparkline-wrap">
-        <canvas class="sparkline" id="spark-${i}"></canvas>
-      </div>
-      <div class="msts-matrix">
-        <div class="msts-matrix-label">MSTS ΨE</div>
-        ${MSTS_SCALE_LABELS.map((l,s)=>`
-          <div class="msts-scale-block" id="msts-blk-${i}-${s}"
-               data-scale="${l}" data-tip="PSD[${s}] W=${CFG.SCALES[s]}">
-          </div>`).join('')}
-      </div>
-      <div class="nabla-row">
-        <div class="nabla-label">∇AI:</div>
-        <div class="nabla-arrow" id="nabla-arrow-${i}">—</div>
-        <div class="nabla-val" id="nabla-val-${i}">—</div>
-        <div style="flex:1"></div>
-        <div id="m-tau-${i}" style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">τ=—</div>
-      </div>
-      <div class="score-row">
-        <div class="score-label">ADMIT</div>
-        <div class="score-bar-wrap"><div class="score-bar-fill" id="score-fill-${i}"></div></div>
-        <div class="score-num" id="score-num-${i}">0.00</div>
-      </div>
-      <div class="state-badge" id="state-badge-${i}">PHOENIX_STANDBY</div>
-    `;
-    grid.appendChild(card);
-
-    // Cache canvas refs (avoids getElementById in hot path)
-    st.sparkCanvas = document.getElementById(`spark-${i}`);
-    st.sparkCtx    = st.sparkCanvas.getContext("2d");
-  });
-}
-
-function setAiMode(i, mode) {
-  instStates[i].aiDisplayMode = mode;
-  const raw = document.getElementById(`tog-raw-${i}`);
-  const adj = document.getElementById(`tog-adj-${i}`);
-  if (mode === "raw") {
-    raw.classList.add("active"); adj.classList.remove("active");
-    document.getElementById(`m-adj-lbl-${i}`).textContent = "AI_ADJ";
-  } else {
-    adj.classList.add("active"); raw.classList.remove("active");
-    document.getElementById(`m-adj-lbl-${i}`).textContent = "AI_RAW";
+      <div class="sparkline-wrap" id="sw-${i}"><canvas class="sparkline" id="sp-${i}"></canvas></div>`;
+    g.appendChild(el); cardEls.push(el);
   }
 }
 
-// ═══════════════════════════════
-// SPARKLINE RENDERER  (no new objects — mutates pre-existing ctx state)
-// ═══════════════════════════════
-function drawSparkline(st) {
-  const canvas = st.sparkCanvas;
-  const ctx    = st.sparkCtx;
-  const W = canvas.offsetWidth, H = 44;
-  if (canvas.width !== W) { canvas.width = W; }
-  canvas.height = H;
-
-  const n = st.sparkCount;
-  if (n < 2) return;
-
-  ctx.clearRect(0, 0, W, H);
-
-  // Collect values from ring buffer in order (oldest → newest)
-  let minV = Infinity, maxV = -Infinity;
-  const vals = new Float64Array(n);
-  const startIdx = n < 80 ? 0 : st.sparkHead;
-  for (let j = 0; j < n; j++) {
-    const v = st.sparkBuf[(startIdx + j) % 80];
-    vals[j] = v;
-    if (v < minV) minV = v;
-    if (v > maxV) maxV = v;
+function buildMatrix() {
+  const g = document.getElementById('matrix-grid');
+  g.innerHTML = ''; matrixDots = [];
+  for (let i = 0; i < N_MATRIX; i++) {
+    const d = document.createElement('div');
+    d.className = 'matrix-dot'; d.title = instruments[i]?.sym||`SYM${i}`;
+    g.appendChild(d); matrixDots.push(d);
   }
-  if (maxV === minV) { minV -= 0.5; maxV += 0.5; }
-  const range = maxV - minV;
+}
 
-  // Draw τ line
-  if (st.tau !== null) {
-    const ty = H - ((st.tau - minV) / range) * H;
-    ctx.beginPath();
-    ctx.strokeStyle = "rgba(245,166,35,0.4)";
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3,3]);
-    ctx.moveTo(0, ty); ctx.lineTo(W, ty);
-    ctx.stroke();
-    ctx.setLineDash([]);
-  }
+// ── Sparkline ─────────────────────────────────────────────────────────
+function drawSparkline(i, inst) {
+  const cv = document.getElementById(`sp-${i}`);
+  const wr = document.getElementById(`sw-${i}`);
+  if (!cv || inst.priceHist.length < 2) return;
+  const W = cv.offsetWidth||200, H = cv.offsetHeight||36;
+  cv.width=W; cv.height=H;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  wr.classList.toggle('research-mode', researchMode);
 
-  // Draw AI_log line
-  const stateCol = STATE_COLOR[st.state] || "var(--text-dim)";
+  const ps = inst.priceHist;
+  const pMin=Math.min(...ps), pRange=(Math.max(...ps)-pMin)||1;
+  const mP = p => H-2-((p-pMin)/pRange)*(H-4);
   ctx.beginPath();
-  ctx.strokeStyle = stateCol;
-  ctx.lineWidth = 1.2;
-  for (let j = 0; j < n; j++) {
-    const x = (j / (n - 1)) * W;
-    const y = H - ((vals[j] - minV) / range) * H;
-    if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
+  ctx.strokeStyle = inst.lockonTimer>0?'#a855f7':inst.admitted?'#22c55e':'#374151';
+  ctx.lineWidth=1;
+  ps.forEach((p,x)=>{ const px=(x/(ps.length-1))*W; x?ctx.lineTo(px,mP(p)):ctx.moveTo(px,mP(p)); });
   ctx.stroke();
 
-  // Score overlay (subtle fill)
-  ctx.beginPath();
-  ctx.fillStyle = "rgba(0,200,122,0.06)";
-  for (let j = 0; j < n; j++) {
-    const x = (j / (n - 1)) * W;
-    const sv = st.scoreHistory[(st.scoreHead + j) % 80];
-    const sy = H - sv * H * 0.8;
-    if (j === 0) { ctx.moveTo(0, H); ctx.lineTo(x, sy); }
-    else ctx.lineTo(x, sy);
-  }
-  ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-}
-
-// ═══════════════════════════════
-// DOM UPDATE  (hot path — no new objects, only mutate existing element properties)
-// ═══════════════════════════════
-
-// Pre-cache all DOM refs to avoid getElementById in hot path
-const domCache = {};
-function cacheDom(i) {
-  domCache[i] = {
-    card:       document.getElementById(`card-${i}`),
-    ailog:      document.getElementById(`m-ailog-${i}`),
-    aiadj:      document.getElementById(`m-aiadj-${i}`),
-    mscore:     document.getElementById(`m-score-${i}`),
-    iffBadge:   document.getElementById(`iff-badge-${i}`),
-    nablaArrow: document.getElementById(`nabla-arrow-${i}`),
-    nablaVal:   document.getElementById(`nabla-val-${i}`),
-    mTau:       document.getElementById(`m-tau-${i}`),
-    scoreFill:  document.getElementById(`score-fill-${i}`),
-    scoreNum:   document.getElementById(`score-num-${i}`),
-    stateBadge: document.getElementById(`state-badge-${i}`),
-    mstBlocks:  Array.from({length:6}, (_,s)=>document.getElementById(`msts-blk-${i}-${s}`)),
-  };
-}
-
-const FSM_ALL_IDS = ["ACTIVE","PRE_DRIFT","RESONANCE","DRIFT_WARNING",
-                     "FLASH_COLLAPSE","PHOENIX_STANDBY","RECOVERY","LOCKED"];
-
-function updateDOM(i, st) {
-  const d = domCache[i];
-  if (!d) return;
-
-  // AI display (toggle)
-  const aiDisplayVal = st.aiDisplayMode === "adj" ? st.aiAdj : st.aiLog;
-  const aiOtherVal   = st.aiDisplayMode === "adj" ? st.aiLog : st.aiAdj;
-  d.ailog.textContent = isFinite(aiDisplayVal) ? aiDisplayVal.toFixed(4) : "—";
-  d.aiadj.textContent = isFinite(aiOtherVal)   ? aiOtherVal.toFixed(4)  : "—";
-  d.mscore.textContent= st.score.toFixed(4);
-
-  // ∇AI arrow
-  let arrCls = "nabla-zero", arrChar = "→";
-  if (st.nabla > 0.001) { arrCls = "nabla-pos"; arrChar = "↑"; }
-  else if (st.nabla < -0.001) { arrCls = "nabla-neg"; arrChar = "↓"; }
-  d.nablaArrow.textContent = arrChar;
-  d.nablaArrow.className   = `nabla-arrow ${arrCls}`;
-  d.nablaVal.textContent   = isFinite(st.nabla) ? st.nabla.toExponential(2) : "—";
-  d.mTau.textContent = st.tau !== null ? `τ=${st.tau.toFixed(3)}` : "τ=—";
-
-  // IFF badge
-  const iffBadgeCls = st.iffVerdict === "FRIEND" ? "card-iff-badge badge-fnd"
-                    : st.iffVerdict === "FOE"    ? "card-iff-badge badge-foe"
-                    :                             "card-iff-badge badge-neutral";
-  d.iffBadge.className    = iffBadgeCls;
-  d.iffBadge.textContent  = st.iffVerdict === "FRIEND" ? "FND"
-                           : st.iffVerdict === "FOE"   ? "FOE" : "NEU";
-
-  // Score bar
-  const pct     = (st.score * 100).toFixed(1) + "%";
-  const barColor= st.score > 0.5 ? "#00c87a"
-                : st.score > 0.2 ? "#f5a623" : "#5a7a94";
-  d.scoreFill.style.width      = pct;
-  d.scoreFill.style.background = barColor;
-  d.scoreNum.textContent = st.score.toFixed(2);
-
-  // State badge
-  const sc = STATE_COLOR[st.state] || "var(--text-dim)";
-  const sa = STATE_ANIM[st.state] || "";
-  d.stateBadge.textContent = st.state === "LOCKED" ? "🔒 LOCKED (PHYSICAL)" : st.state;
-  d.stateBadge.className   = `state-badge ${sa}`;
-  d.stateBadge.style.borderColor  = sc;
-  d.stateBadge.style.color        = sc;
-  d.stateBadge.style.background   = `color-mix(in srgb, ${sc} 10%, transparent)`;
-
-  // Card left border
-  d.card.style.setProperty("--card-state-color", sc);
-
-  // MSTS energy blocks — heatmap (0=dark, 1=saturated)
-  const maxPSD = Math.max(...st.mstsPSD, 1e-10);
-  for (let s = 0; s < 6; s++) {
-    const pct2 = Math.min(1, st.mstsPSD[s] / maxPSD);
-    const active = st.mstsPSD[s] > st.mstsSigmaLimit;
-    const baseHue = active ? "270" : "210";
-    const sat     = active ? "80" : "40";
-    d.mstBlocks[s].style.background =
-      `hsl(${baseHue}, ${sat}%, ${Math.round(8 + pct2 * 45)}%)`;
-    d.mstBlocks[s].style.borderColor = active
-      ? `hsla(270,80%,70%,0.6)` : "rgba(255,255,255,0.05)";
-  }
-
-  // Sparkline
-  drawSparkline(st);
-}
-
-// ═══════════════════════════════
-// HUD UPDATE  (no allocation)
-// ═══════════════════════════════
-function updateHUD(latMs, globalTick) {
-  const st0 = instStates[0];  // Primary instrument for global HUD
-
-  // CFR
-  const rho = (st0.rhoLL || 0);
-  document.getElementById("hud-rho").textContent = rho.toFixed(4);
-  document.getElementById("hud-rho-sub").textContent =
-    `4-channel · PRE_DRIFT=${st0.cfrPreDrift?"YES":"NO"} · threshold=0.60`;
-
-  // MSTS
-  let totActive = 0;
-  for (let s = 0; s < 6; s++) {
-    if (st0.mstsPSD[s] > st0.mstsSigmaLimit) totActive++;
-  }
-  document.getElementById("hud-msts").textContent = `${totActive} / 6`;
-  document.getElementById("hud-msts-sub").textContent =
-    `σ_limit=${st0.mstsSigmaLimit.toExponential(2)} · resonance=${st0.state==="RESONANCE"?"ACTIVE":"OFF"}`;
-
-  // IFF
-  const iffEl = document.getElementById("hud-iff");
-  iffEl.textContent = st0.iffVerdict;
-  iffEl.className   = st0.iffVerdict === "FRIEND" ? "hud-value iff-friend"
-                    : st0.iffVerdict === "FOE"    ? "hud-value iff-foe"
-                    :                               "hud-value iff-neutral";
-  document.getElementById("hud-iff-sub").textContent =
-    `damping factor: ${(st0.dampingFactor||1).toFixed(3)}`;
-
-  // Latency
-  welfordUpdate(hudWelLat, latMs);
-  document.getElementById("hud-lat").textContent = latMs.toFixed(3);
-
-  // FSM strip — highlight active state for instrument 0
-  FSM_ALL_IDS.forEach(id => {
-    const el = document.getElementById(`fsm-${id}`);
-    if (!el) return;
-    if (id === st0.state) {
-      el.classList.add("active-state");
-      el.querySelector(".name").style.color = STATE_COLOR[id];
-    } else {
-      el.classList.remove("active-state");
-      el.querySelector(".name").style.color = "";
+  if (researchMode && inst.aiHist.length > 2) {
+    const ais=inst.aiHist, taus=inst.tauHist;
+    const aiMax=Math.max(...ais,...(taus.length?taus:[0]))*1.1||1;
+    const mA = v => H-2-(v/aiMax)*(H-4);
+    if (taus.length>1) {
+      ctx.beginPath(); ctx.setLineDash([2,3]); ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1;
+      taus.forEach((t,x)=>{ const px=(x/(taus.length-1))*W; x?ctx.lineTo(px,mA(t)):ctx.moveTo(px,mA(t)); });
+      ctx.stroke(); ctx.setLineDash([]);
     }
-  });
-
-  // FFI activity bars (animated)
-  const t = globalTick / 100;
-  document.getElementById("ffi-b0").style.width = (20 + 15*Math.sin(t*0.7)).toFixed(1)+"%";
-  document.getElementById("ffi-b1").style.width = (35 + 20*Math.sin(t*0.3)).toFixed(1)+"%";
-  document.getElementById("ffi-b2").style.width = Math.min(100, Math.abs(rho) * 100).toFixed(1)+"%";
-  document.getElementById("ffi-b3").style.width = (50 + 25*Math.sin(t*1.1)).toFixed(1)+"%";
-  document.getElementById("ffi-b4").style.width = (60 + 20*Math.sin(t*0.5)).toFixed(1)+"%";
-  document.getElementById("ffi-b5").style.width = "100%";
-}
-
-// ═══════════════════════════════
-// MAIN RENDER LOOP  (RAF — DOM updates only, physics driven by WS onmessage)
-// ═══════════════════════════════
-let globalTick = 0;
-const TICKS_PER_FRAME = 8;   // used only in SIM fallback mode
-
-// SIM fallback frame (runs when WS is not live)
-function simFallbackFrame() {
-  const t0 = performance.now();
-  for (let t = 0; t < TICKS_PER_FRAME; t++) {
-    INSTRUMENTS.forEach((inst, i) => {
-      let shockFactor = 1;
-      const r = Math.random();
-      if (r < 0.003)      shockFactor = 15 + Math.random() * 30;
-      else if (r < 0.025) shockFactor = 3  + Math.random() * 5;
-      prices[i] += randn() * (inst.priceSeed * 0.0003) * shockFactor;
-      prices[i]  = Math.max(prices[i], inst.priceSeed * 0.1);
-      vols[i]    = Math.abs(inst.volSeed + randn() * 0.5);
-      physicsTick(instStates[i], prices[i], vols[i], globalTick);
-      globalTick++;
-    });
+    ctx.beginPath(); ctx.strokeStyle='#a855f7'; ctx.lineWidth=1.5;
+    ais.forEach((v,x)=>{ const px=(x/(ais.length-1))*W; x?ctx.lineTo(px,mA(v)):ctx.moveTo(px,mA(v)); });
+    ctx.stroke();
+    ais.forEach((v,x)=>{ if(taus[x]!==undefined&&v<=taus[x]){ ctx.beginPath(); ctx.arc((x/(ais.length-1))*W,mA(v),1.5,0,Math.PI*2); ctx.fillStyle='#22c55e'; ctx.fill(); } });
   }
-  return (performance.now() - t0) / TICKS_PER_FRAME;
 }
 
-// RAF render loop: in LIVE mode just refresh DOM; in SIM mode also advance physics
-function rafLoop() {
-  let latMs;
-  if (!isLive) {
-    latMs = simFallbackFrame();
-  } else {
-    // LIVE: physics already advanced by WS onmessage; just measure render cost
-    latMs = performance.now();
-    // (no-op — latMs will be overwritten below)
-    latMs = 0;
-  }
-  INSTRUMENTS.forEach((_, i) => updateDOM(i, instStates[i]));
-  updateHUD(latMs, globalTick);
-  requestAnimationFrame(rafLoop);
+// ── Card update ────────────────────────────────────────────────────────
+function updateCard(i, inst) {
+  const el = cardEls[i]; if (!el) return;
+  const fmt = p => p>1000?p.toFixed(0):p>10?p.toFixed(2):p.toFixed(3);
+  document.getElementById(`price-${i}`).textContent = fmt(inst.price);
+  const pct = inst.prevPrice ? ((inst.price-inst.prevPrice)/inst.prevPrice)*100 : 0;
+  const ch = document.getElementById(`change-${i}`);
+  ch.textContent = `${pct>=0?'+':''}${pct.toFixed(3)}%`;
+  ch.className   = `card-change ${pct>=0?'up':'dn'}`;
+  const aiEl = document.getElementById(`ai-${i}`);
+  if (inst.aiVal!==null) { aiEl.textContent=inst.aiVal>100?inst.aiVal.toFixed(0):inst.aiVal.toFixed(3); aiEl.className=`metric-val ${inst.admitted?'ai-admitted':'ai-rejected'}`; }
+  if (inst.tau!==null) document.getElementById(`tau-${i}`).textContent=inst.tau.toFixed(3);
+  document.getElementById(`phi-${i}`).textContent=inst.phi.toFixed(3);
+  const dP=inst.priceBuf.length>1?Math.abs(inst.priceBuf.at(-1)-inst.priceBuf[0]):0;
+  document.getElementById(`dp-${i}`).textContent=dP>100?dP.toFixed(0):dP.toFixed(3);
+  el.classList.remove('admitted','lockon');
+  const badge=document.getElementById(`badge-${i}`);
+  badge.className='card-badge'; badge.textContent='WATCH';
+  if (inst.lockonTimer>0){ el.classList.add('lockon'); badge.classList.add('lockon-badge'); badge.textContent='[LOCK-ON]'; }
+  else if (inst.admitted){ el.classList.add('admitted'); badge.classList.add('admitted-badge'); badge.textContent='ADMITTED'; }
+  drawSparkline(i, inst);
 }
 
-// ═══════════════════════════════
-// BOOT
-// ═══════════════════════════════
-buildCards();
-INSTRUMENTS.forEach((_, i) => cacheDom(i));
-
-// Warm-up: 120 silent SIM ticks so engines have filled windows before display
-for (let t = 0; t < 120; t++) {
-  INSTRUMENTS.forEach((inst, i) => {
-    prices[i] += randn() * inst.priceSeed * 0.0003;
-    prices[i]  = Math.max(prices[i], inst.priceSeed * 0.1);
-    vols[i]    = Math.abs(inst.volSeed + randn() * 0.5);
-    physicsTick(instStates[i], prices[i], vols[i], t);
+// ── Matrix update ──────────────────────────────────────────────────────
+function updateMatrix() {
+  instruments.forEach((inst,i) => {
+    if (i>=N_MATRIX) return;
+    matrixDots[i].className = 'matrix-dot'+(inst.lockonTimer>0?' active':inst.admitted?' recent-active':'');
   });
 }
-globalTick = 120;
 
-// Start tick-rate display
-startTickRateTimer();
+// ── Log ────────────────────────────────────────────────────────────────
+const logLines = [];
+function addLog(msg, type='noise') {
+  const n=new Date(), ts=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}.${String(n.getMilliseconds()).padStart(3,'0')}`;
+  logLines.unshift({msg:`[${ts}] ${msg}`,type});
+  if (logLines.length>30) logLines.pop();
+  document.getElementById('sys-log').innerHTML=logLines.slice(0,12).map(l=>`<div class="log-line ${l.type}-log">${l.msg}</div>`).join('');
+}
 
-// Attempt Binance WebSocket connection (falls back to SIM if blocked)
-wsConnect();
+// ── 300ms UI refresh ───────────────────────────────────────────────────
+function uiRefresh() {
+  uiTick++;
+  document.getElementById('tick-counter').textContent = `TICK ${String(uiTick).padStart(4,'0')}`;
 
-// Start render loop regardless of WS status
-requestAnimationFrame(rafLoop);
+  let phiSum = btc.phi;
+  instruments.forEach((inst,i) => {
+    if (inst.isLive) return;
+    simulateDynamics(inst);
+    if (inst.lockon) { gsLockon++; addLog(`LOCK-ON  ${inst.sym.padEnd(10)} AI=${inst.aiVal?.toFixed(3)} ≤ τ=${inst.tau?.toFixed(3)}`,'lockon'); }
+    phiSum += inst.phi;
+  });
+
+  for (let i=0;i<N_ELITE;i++) updateCard(i,instruments[i]);
+  updateMatrix();
+
+  const phi = phiSum / N_MATRIX;
+  const totalChecked = btcTotal + uiTick*(N_MATRIX-1);
+  const totalAdmit   = btcAdmit + instruments.slice(1,N_MATRIX).filter(x=>x.admitted).length;
+  const rejRate      = totalChecked > 50 ? 1-(totalAdmit/totalChecked) : 0.86;
+  const entropy      = 0.30 + phi*0.003;
+
+  document.getElementById('stat-phi').textContent     = (1.2+phi*2.5).toFixed(4);
+  document.getElementById('stat-phi').className       = `stat-value ${phi>1.5?'hot':''}`;
+  document.getElementById('stat-rej').textContent     = (rejRate*100).toFixed(2)+'%';
+  document.getElementById('stat-entropy').textContent = entropy.toFixed(5);
+  document.getElementById('stat-tps').textContent     = tpsDisplay;
+  document.getElementById('stat-tps').className       = `stat-value ${tpsDisplay>5?'live':''}`;
+
+  const rp = Math.min(99,Math.round(rejRate*100));
+  document.getElementById('rbar-pct').textContent   = rp+'%';
+  document.getElementById('rbar-fill').style.width  = rp+'%';
+  document.getElementById('gs-total').textContent   = btcTotal.toLocaleString();
+  document.getElementById('gs-admitted').textContent= btcAdmit.toLocaleString();
+  document.getElementById('gs-rejected').textContent= btcReject.toLocaleString();
+  document.getElementById('gs-lockon').textContent  = gsLockon.toLocaleString();
+}
+
+// ── Controls ───────────────────────────────────────────────────────────
+document.getElementById('btn-research').addEventListener('click', function() {
+  researchMode = !researchMode;
+  this.classList.toggle('active', researchMode);
+  for (let i=0;i<N_ELITE;i++) drawSparkline(i,instruments[i]);
+  addLog(`Research mode ${researchMode?'ENABLED':'DISABLED'} — AI_t + τ overlay`,'admit');
+});
+
+document.getElementById('btn-peer').addEventListener('click', () => {
+  document.getElementById('peer-review-overlay').classList.add('open');
+  if (window.renderMathInElement)
+    renderMathInElement(document.getElementById('peer-review-modal'),
+      {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});
+});
+document.getElementById('close-peer').addEventListener('click', () => document.getElementById('peer-review-overlay').classList.remove('open'));
+document.getElementById('peer-review-overlay').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
+
+document.getElementById('btn-manual').addEventListener('click', () => document.getElementById('glossary-overlay').classList.add('open'));
+document.getElementById('close-gloss').addEventListener('click', () => document.getElementById('glossary-overlay').classList.remove('open'));
+document.getElementById('glossary-overlay').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
+
+// ── Init ───────────────────────────────────────────────────────────────
+buildCards(); buildMatrix();
+addLog('GIE-Soliton V2.3 · AI gate W=100 τ=5th δ=5USD · Ma (2026)','admit');
+
+// Fast warmup — 50 ticks to populate simulation history
+let wc = 0;
+const warmup = setInterval(() => {
+  instruments.forEach((inst,i) => { if(i>0) simulateDynamics(inst); });
+  if (++wc >= 50) {
+    clearInterval(warmup);
+    addLog('Warmup complete · connecting Binance WS','ws');
+    connectBinance();
+    setInterval(uiRefresh, CYCLE_MS);
+  }
+}, 16);
 </script>
 </body>
 </html>
