@@ -3,778 +3,621 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GIE-Soliton V2.3 · Atomic Integrity Verification Lab</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<title>GIE-Soliton V2.5 AWACS</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"
-  onload="renderMathInElement(document.getElementById('peer-review-modal'),{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
 <style>
-/* ── Reset & Root ────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg:          #0a0a0a;
-  --surface:     #111111;
-  --border:      #222222;
-  --border2:     #2a2a2a;
-  --text:        #d1d1d1;
-  --text-dim:    #6b6b6b;
-  --text-faint:  #333333;
-  --purple:      #a855f7;
-  --purple-dim:  #3b1f5e;
-  --purple-glow: rgba(168,85,247,0.18);
-  --green:       #22c55e;
-  --green-dim:   #052e16;
-  --noise:       #4b5563;
-  --red:         #ef4444;
-  --amber:       #f59e0b;
-  --font:        'JetBrains Mono', 'Courier New', monospace;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0a;--sur:#111;--sur2:#141414;--bor:#222;--bor2:#2a2a2a;
+  --txt:#d1d1d1;--dim:#6b6b6b;--fnt:#333;
+  --pur:#a855f7;--purd:#3b1f5e;--purg:rgba(168,85,247,.18);
+  --grn:#22c55e;--grnd:#052e16;--red:#ef4444;--amb:#f59e0b;
+  --cyn:#06b6d4;--noi:#4b5563;--f:'JetBrains Mono',monospace;
 }
-html, body {
-  background: var(--bg); color: var(--text);
-  font-family: var(--font); font-size: 12px; line-height: 1.5;
-  min-height: 100vh; overflow-x: hidden; cursor: crosshair;
-}
-body::before {
-  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 9000;
-  background: repeating-linear-gradient(to bottom,transparent 0px,transparent 2px,rgba(0,0,0,0.07) 2px,rgba(0,0,0,0.07) 4px);
-}
-body::after {
-  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 8999; opacity: 0.4;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
-}
-/* ── Mobile Block ────────────────────────────────────────────────────── */
-#mobile-block {
-  display: none; position: fixed; inset: 0; background: #000; z-index: 99999;
-  align-items: center; justify-content: center; flex-direction: column; gap: 20px; padding: 40px; text-align: center;
-}
-#mobile-block .mb-icon { font-size: 32px; color: var(--purple); letter-spacing: 4px; }
-#mobile-block p { color: #666; font-size: 11px; max-width: 280px; line-height: 1.8; border: 1px solid #222; padding: 16px; }
-#mobile-block p span { color: var(--text); display: block; margin-bottom: 8px; }
-@media (max-width: 1024px) { #mobile-block { display: flex; } }
-/* ── Layout ──────────────────────────────────────────────────────────── */
-#app { max-width: 1480px; margin: 0 auto; padding: 16px 20px 40px; }
-/* ── Header ──────────────────────────────────────────────────────────── */
-#hdr {
-  display: grid; grid-template-columns: auto 1fr auto;
-  align-items: center; gap: 20px; padding: 12px 16px;
-  border: 1px solid var(--border); background: var(--surface);
-  margin-bottom: 2px; position: relative; overflow: hidden;
-}
-#hdr::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, var(--purple), transparent 60%); }
-.hdr-title .t1 { font-size: 11px; font-weight: 700; color: var(--purple); letter-spacing: 0.2em; }
-.hdr-title .t2 { font-size: 9px; color: var(--text-dim); letter-spacing: 0.12em; margin-top: 2px; }
-.status-bar { display: flex; align-items: stretch; border: 1px solid var(--border2); }
-.stat-cell { padding: 6px 13px; border-right: 1px solid var(--border2); display: flex; flex-direction: column; gap: 2px; min-width: 138px; }
-.stat-cell:last-child { border-right: none; }
-.stat-label { font-size: 8px; color: var(--text-dim); letter-spacing: 0.15em; text-transform: uppercase; }
-.stat-value { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; transition: color 0.1s; }
-.stat-value.hot  { color: var(--purple); }
-.stat-value.live { color: var(--green); }
-.stat-sub { font-size: 8px; color: var(--text-faint); }
-.hdr-controls { display: flex; gap: 7px; align-items: center; }
-.btn {
-  background: transparent; border: 1px solid var(--border2); color: var(--text-dim);
-  font-family: var(--font); font-size: 9px; letter-spacing: 0.1em; padding: 6px 10px;
-  cursor: pointer; transition: all 0.15s; text-transform: uppercase; white-space: nowrap;
-}
-.btn:hover { border-color: var(--purple); color: var(--purple); }
-.btn.active { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); }
-.btn.peer-btn { border-color: #2a2040; color: #7c5cbf; }
-.btn.peer-btn:hover { border-color: var(--purple); color: var(--purple); }
-#ws-status { display: flex; align-items: center; gap: 5px; font-size: 8px; color: var(--text-dim); letter-spacing: 0.1em; padding: 4px 9px; border: 1px solid var(--border2); }
-#ws-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--noise); flex-shrink: 0; transition: background 0.3s, box-shadow 0.3s; }
-#ws-dot.connecting { background: var(--amber); animation: p-amber 1s infinite; }
-#ws-dot.live       { background: var(--green); box-shadow: 0 0 5px var(--green); animation: p-green 2s infinite; }
-#ws-dot.error      { background: var(--red); }
-@keyframes p-amber { 0%,100%{opacity:1} 50%{opacity:0.4} }
-@keyframes p-green { 0%,100%{opacity:1;box-shadow:0 0 5px var(--green)} 50%{opacity:0.6;box-shadow:none} }
-/* ── Sub-header ──────────────────────────────────────────────────────── */
-#sub-hdr {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 6px 16px; border: 1px solid var(--border); border-top: none;
-  background: #0d0d0d; margin-bottom: 12px; font-size: 8px; color: var(--text-faint); letter-spacing: 0.1em;
-}
-.pulse-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--green); margin-right: 6px; animation: p-green 2s ease-in-out infinite; }
-/* ── Main grid ───────────────────────────────────────────────────────── */
-#main-grid { display: grid; grid-template-columns: 1fr 180px; gap: 12px; align-items: start; }
-/* ── Elite Board ─────────────────────────────────────────────────────── */
-#elite-board { display: flex; flex-direction: column; gap: 8px; }
-.board-header { display: flex; justify-content: space-between; align-items: center; padding: 0 2px 6px; border-bottom: 1px solid var(--border); }
-.board-header h2 { font-size: 9px; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; }
-.cards-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; }
-/* ── Card ────────────────────────────────────────────────────────────── */
-.card { background: var(--surface); border: 1px solid var(--border); padding: 10px; position: relative; overflow: hidden; transition: border-color 0.1s; }
-.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--noise); transition: background 0.1s; }
-.card.live-feed::after { content: 'LIVE'; position: absolute; top: 5px; right: 5px; font-size: 7px; color: var(--green); letter-spacing: 0.12em; background: var(--green-dim); padding: 1px 4px; border: 1px solid var(--green); }
-.card.admitted { border-color: var(--green); }
-.card.admitted::before { background: var(--green); }
-.card.lockon { border-color: var(--purple) !important; box-shadow: 0 0 12px var(--purple-glow), inset 0 0 20px rgba(168,85,247,0.04); animation: lf 0.8s ease-out; }
-.card.lockon::before { background: var(--purple) !important; }
-@keyframes lf { 0%{box-shadow:0 0 24px var(--purple),inset 0 0 30px rgba(168,85,247,0.12)} 100%{box-shadow:0 0 12px var(--purple-glow),inset 0 0 20px rgba(168,85,247,0.04)} }
-.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
-.card-symbol { font-size: 11px; font-weight: 700; color: var(--text); letter-spacing: 0.05em; }
-.card-badge { font-size: 7px; padding: 1px 5px; border: 1px solid var(--border2); color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.1s; }
-.card-badge.lockon-badge   { background: var(--purple-dim); border-color: var(--purple); color: var(--purple); animation: bp 0.8s ease-out; }
-.card-badge.admitted-badge { background: var(--green-dim);  border-color: var(--green);  color: var(--green); }
-@keyframes bp { 0%,100%{opacity:1} 50%{opacity:0.5} }
-.card-price  { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; margin-bottom: 2px; }
-.card-change { font-size: 9px; margin-bottom: 6px; }
-.card-change.up { color: var(--green); }
-.card-change.dn { color: var(--red); }
-.card-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-bottom: 6px; }
-.metric { display: flex; flex-direction: column; gap: 1px; }
-.metric-label { font-size: 7px; color: var(--text-faint); letter-spacing: 0.1em; text-transform: uppercase; }
-.metric-val { font-size: 10px; color: var(--text-dim); }
-.metric-val.ai-admitted { color: var(--purple); }
-.metric-val.ai-rejected { color: var(--noise); }
-.sparkline-wrap { position: relative; height: 36px; background: var(--bg); border: 1px solid var(--border); overflow: hidden; }
-.sparkline-wrap.research-mode { background: #080810; }
-canvas.sparkline { position: absolute; inset: 0; width: 100%; height: 100%; }
-/* ── Right Panel ─────────────────────────────────────────────────────── */
-#right-panel { display: flex; flex-direction: column; gap: 8px; }
-.panel-box { background: var(--surface); border: 1px solid var(--border); padding: 10px; }
-.panel-title { font-size: 8px; color: var(--text-faint); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-.panel-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-#matrix-grid { display: grid; grid-template-columns: repeat(10,1fr); gap: 2px; }
-.matrix-dot { width: 100%; aspect-ratio: 1; background: #0d1a0d; border-radius: 1px; transition: background 0.15s, box-shadow 0.15s; animation: breathe 3s ease-in-out infinite; }
-@keyframes breathe { 0%,100%{background:#0d1a0d} 50%{background:#0f200f} }
-.matrix-dot.active        { background: var(--purple) !important; box-shadow: 0 0 4px var(--purple); animation: none; }
-.matrix-dot.recent-active { background: var(--purple-dim); animation: none; }
-#rejection-bar-wrap { margin-top: 6px; }
-.rbar-label { display: flex; justify-content: space-between; font-size: 8px; color: var(--text-dim); margin-bottom: 3px; }
-.rbar-track { height: 3px; background: var(--border); border-radius: 1px; overflow: hidden; }
-.rbar-fill  { height: 100%; background: var(--purple); transition: width 0.5s ease; border-radius: 1px; }
-.gate-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px solid var(--border); font-size: 8px; }
-.gate-row:last-child { border-bottom: none; }
-.gate-row .lbl { color: var(--text-dim); }
-.gate-row .val { font-weight: 700; }
-.val-purple { color: var(--purple); } .val-green { color: var(--green); }
-.val-noise  { color: var(--noise);  } .val-text  { color: var(--text); }
-.val-amber  { color: var(--amber);  }
-#sys-log { font-size: 8px; color: var(--text-faint); height: 80px; overflow: hidden; display: flex; flex-direction: column-reverse; gap: 1px; }
-.log-line { line-height: 1.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lockon-log { color: var(--purple); } .admit-log { color: var(--green); }
-.noise-log  { color: var(--text-faint); } .ws-log { color: var(--amber); }
-.error-log  { color: var(--red); }
-/* ── Modal base ──────────────────────────────────────────────────────── */
-.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.88); z-index: 5000; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
-.modal-overlay.open { display: flex; }
-.modal-close { background: none; border: 1px solid var(--border2); color: var(--text-dim); cursor: pointer; font-family: var(--font); font-size: 9px; padding: 4px 10px; }
-.modal-close:hover { border-color: var(--purple); color: var(--purple); }
-/* ── Glossary Modal ──────────────────────────────────────────────────── */
-#glossary-modal { background: var(--surface); border: 1px solid var(--border2); width: 760px; max-height: 80vh; overflow-y: auto; position: relative; }
-#glossary-modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--purple), var(--green)); }
-.gloss-hdr { padding: 16px 20px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); }
-.gloss-hdr h3 { font-size: 10px; color: var(--text); letter-spacing: 0.2em; text-transform: uppercase; }
-.gloss-grid { display: grid; grid-template-columns: 1fr 1fr; }
-.gloss-col { padding: 16px 20px; }
-.gloss-col:first-child { border-right: 1px solid var(--border); }
-.gloss-col-title { font-size: 8px; color: var(--text-dim); letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
-.gloss-term { margin-bottom: 12px; }
-.gloss-term dt { font-size: 9px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
-.gloss-term dd { font-size: 8px; color: var(--text-dim); line-height: 1.7; }
-.gloss-term dd em { color: var(--purple); font-style: normal; }
-/* ── Peer Review Modal ───────────────────────────────────────────────── */
-#peer-review-modal {
-  background: #0c0c10; border: 1px solid #2a2040;
-  width: 820px; max-height: 86vh; overflow-y: auto; position: relative;
-}
-#peer-review-modal::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg,#7c3aed,#a855f7,#c084fc); }
-.pr-hdr { padding: 18px 24px 14px; border-bottom: 1px solid #2a2040; display: flex; justify-content: space-between; align-items: flex-start; }
-.pr-title { font-size: 11px; font-weight: 700; color: var(--purple); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 4px; }
-.pr-sub   { font-size: 9px; color: #7c5cbf; letter-spacing: 0.08em; }
-.pr-body  { padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; }
-.pr-section { border: 1px solid #1e1830; padding: 16px; position: relative; }
-.pr-section::before { content: attr(data-n); position: absolute; top: -1px; left: 16px; font-size: 7px; color: var(--purple); letter-spacing: 0.15em; background: #0c0c10; padding: 0 6px; text-transform: uppercase; }
-.pr-section h4 { font-size: 10px; color: var(--text); margin-bottom: 10px; letter-spacing: 0.05em; }
-.pr-section p  { font-size: 9px; color: var(--text-dim); line-height: 1.8; margin-bottom: 8px; }
-.pr-section p:last-child { margin-bottom: 0; }
-.pr-section em { color: var(--purple); font-style: normal; }
-.katex-display { margin: 10px 0 !important; }
-.katex { font-size: 1.05em !important; color: #c4b5fd !important; }
-.pr-deflist { display: flex; flex-direction: column; gap: 5px; margin: 10px 0; }
-.pr-def { display: grid; grid-template-columns: 130px 1fr; gap: 8px; font-size: 9px; border-bottom: 1px solid #1e1830; padding-bottom: 5px; }
-.pr-def:last-child { border-bottom: none; padding-bottom: 0; }
-.pr-def dt { color: var(--purple); font-weight: 700; }
-.pr-def dd { color: var(--text-dim); line-height: 1.7; }
-.pr-algo { background: #080812; border: 1px solid #1e1830; padding: 12px; font-size: 9px; color: #94a3b8; line-height: 1.9; white-space: pre; overflow-x: auto; margin-top: 8px; }
-.pr-algo .kw  { color: #a855f7; }
-.pr-algo .cm  { color: #374151; font-style: italic; }
-.pr-algo .val { color: #22c55e; }
-.pr-table { width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 8px; }
-.pr-table th { color: var(--text-dim); font-weight: 400; text-align: left; padding: 5px 8px; border-bottom: 1px solid #2a2040; letter-spacing: 0.08em; font-size: 8px; text-transform: uppercase; }
-.pr-table td { padding: 5px 8px; border-bottom: 1px solid #1a1a1a; color: var(--text-dim); }
-.pr-table td:first-child { color: var(--text); font-weight: 700; }
-.pr-table tr:last-child td { border-bottom: none; }
-.td-green { color: var(--green) !important; } .td-purple { color: var(--purple) !important; } .td-red { color: var(--red) !important; }
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border2); }
+html,body{background:var(--bg);color:var(--txt);font-family:var(--f);font-size:12px;line-height:1.5;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px)}
+#app{max-width:1560px;margin:0 auto;padding:12px 16px 40px}
+/* header */
+#hdr{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:14px;padding:9px 13px;
+  border:1px solid var(--bor);background:var(--sur);margin-bottom:2px;position:relative;overflow:hidden}
+#hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--pur),var(--cyn) 50%,transparent)}
+.t1{font-size:11px;font-weight:700;color:var(--pur);letter-spacing:.2em}
+.t2{font-size:8px;color:var(--dim);letter-spacing:.1em;margin-top:2px}
+.sbar{display:flex;align-items:stretch;border:1px solid var(--bor2)}
+.sc{padding:5px 11px;border-right:1px solid var(--bor2);display:flex;flex-direction:column;gap:2px;min-width:115px}
+.sc:last-child{border-right:none}
+.sl{font-size:7px;color:var(--dim);letter-spacing:.14em;text-transform:uppercase}
+.sv{font-size:13px;font-weight:700;color:var(--txt);transition:color .1s}
+.sv.hot{color:var(--pur)}.sv.live{color:var(--grn)}.sv.warn{color:var(--amb)}.sv.crit{color:var(--red)}
+.ss{font-size:7px;color:var(--fnt)}
+.hr{display:flex;gap:6px;align-items:center}
+#ws-pill{display:flex;align-items:center;gap:5px;font-size:8px;color:var(--dim);padding:4px 8px;border:1px solid var(--bor2);letter-spacing:.1em}
+#ws-dot{width:5px;height:5px;border-radius:50%;background:var(--noi);flex-shrink:0;transition:background .3s}
+#ws-dot.live{background:var(--grn);animation:pg 2s infinite}
+#ws-dot.err{background:var(--red)}
+#tkr{font-size:8px;color:var(--fnt);padding:4px 7px;border:1px solid var(--bor)}
+@keyframes pg{0%,100%{opacity:1;box-shadow:0 0 5px var(--grn)}50%{opacity:.6;box-shadow:none}}
+@keyframes pa{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes br{0%,100%{opacity:1}50%{opacity:.15}}
+/* subhdr */
+#sub{display:flex;justify-content:space-between;padding:4px 13px;border:1px solid var(--bor);border-top:none;
+  background:#0d0d0d;margin-bottom:10px;font-size:7px;color:var(--fnt);letter-spacing:.1em}
+/* fsm strip */
+#fsm{display:flex;flex-wrap:wrap;gap:4px;padding:5px 8px;background:var(--sur);border:1px solid var(--bor);margin-bottom:10px}
+.fn{font-size:7px;padding:2px 6px;border:1px solid var(--bor2);color:var(--fnt);letter-spacing:.07em;
+  text-transform:uppercase;border-radius:1px;display:flex;align-items:center;gap:4px;transition:all .2s}
+.fd{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.fn.fa{font-weight:700;border-color:currentColor;color:var(--txt)}
+.fn.fa.sACTIVE{color:var(--grn)}.fn.fa.sPRE_DRIFT{color:var(--amb)}.fn.fa.sRESONANCE{color:var(--pur)}
+.fn.fa.sDRIFT_WARNING{color:#f97316}.fn.fa.sFLASH_COLLAPSE{color:var(--red)}
+.fn.fa.sPHOENIX_STANDBY{color:var(--noi)}.fn.fa.sRECOVERY{color:var(--cyn)}
+.fn.fa.sLOCKED{color:var(--red);animation:br .8s infinite}
+/* main layout */
+#ml{display:grid;grid-template-columns:1fr 255px;gap:10px;align-items:start}
+#cc{display:flex;flex-direction:column;gap:8px}
+.sh{display:flex;justify-content:space-between;align-items:center;padding:0 2px 5px;border-bottom:1px solid var(--bor);margin-bottom:6px}
+.sh h2{font-size:8px;color:var(--dim);letter-spacing:.18em;text-transform:uppercase}
+/* cards grid */
+.cg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+/* card */
+.card{background:var(--sur);border:1px solid var(--bor);padding:10px;position:relative;overflow:hidden;transition:border-color .15s}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--noi);transition:background .2s}
+.card.sACTIVE{border-color:#1a3a1a}.card.sACTIVE::before{background:var(--grn)}
+.card.sPRE_DRIFT{border-color:#3a2e00}.card.sPRE_DRIFT::before{background:var(--amb)}
+.card.sRESONANCE{border-color:#3b1f5e}.card.sRESONANCE::before{background:var(--pur)}
+.card.sDRIFT_WARNING{border-color:#3a2010}.card.sDRIFT_WARNING::before{background:#f97316}
+.card.sFLASH_COLLAPSE{border-color:#3a0808}.card.sFLASH_COLLAPSE::before{background:var(--red)}
+.card.sPHOENIX_STANDBY{border-color:#1a1a1a}.card.sPHOENIX_STANDBY::before{background:var(--noi)}
+.card.sRECOVERY{border-color:#0e2a2a}.card.sRECOVERY::before{background:var(--cyn)}
+.card.sLOCKED{border-color:#4a0000}.card.sLOCKED::before{background:var(--red);animation:br .6s infinite}
+.ctop{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.csym{font-size:13px;font-weight:700;color:var(--txt);letter-spacing:.04em}
+.cex{font-size:7px;color:var(--fnt);margin-top:2px}
+.cbadge{font-size:7px;padding:2px 5px;border:1px solid var(--bor2);color:var(--dim);letter-spacing:.1em;text-transform:uppercase;transition:all .2s}
+.bACTIVE{background:var(--grnd);border-color:var(--grn);color:var(--grn)}
+.bPRE_DRIFT{background:#2a1e00;border-color:var(--amb);color:var(--amb);animation:pa 1.4s infinite}
+.bRESONANCE{background:var(--purd);border-color:var(--pur);color:var(--pur);animation:pa .7s infinite}
+.bFLASH_COLLAPSE,.bLOCKED{background:#2a0000;border-color:var(--red);color:var(--red);animation:br .5s infinite}
+.bPHOENIX_STANDBY{color:var(--noi);border-color:var(--noi)}
+.bRECOVERY{color:var(--cyn);border-color:var(--cyn)}
+.cpr{font-size:17px;font-weight:700;color:var(--txt);letter-spacing:-.02em;margin-bottom:1px}
+.cch{font-size:9px;margin-bottom:6px}.cch.up{color:var(--grn)}.cch.dn{color:var(--red)}
+.cm{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:6px}
+.met{display:flex;flex-direction:column;gap:1px;padding:3px 5px;background:var(--bg);border:1px solid var(--bor)}
+.ml2{font-size:7px;color:var(--fnt);letter-spacing:.1em;text-transform:uppercase}
+.mv{font-size:10px;color:var(--dim);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv.hi{color:var(--pur)}.mv.lo{color:var(--noi)}.mv.ok{color:var(--grn)}.mv.wn{color:var(--amb)}.mv.ct{color:var(--red)}
+.spw{position:relative;height:36px;background:var(--bg);border:1px solid var(--bor);overflow:hidden;margin-bottom:5px}
+canvas.sp{position:absolute;inset:0;width:100%;height:100%}
+.srow{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.slb{font-size:7px;color:var(--fnt);width:34px;flex-shrink:0}
+.stk{flex:1;height:4px;background:var(--bor);border-radius:1px;overflow:hidden}
+.sfl{height:100%;border-radius:1px;transition:width .3s,background .3s}
+.snu{font-size:9px;font-weight:700;color:var(--txt);width:28px;text-align:right}
+.irow{display:flex;align-items:center;justify-content:space-between;font-size:8px;margin-top:3px}
+.ilb{color:var(--fnt)}.iv{font-weight:700;letter-spacing:.07em}
+.iv.in{color:var(--noi)}.iv.fr{color:var(--grn)}.iv.fo{color:var(--red)}
+/* awacs panel */
+#ap{display:flex;flex-direction:column;gap:8px}
+.ab{background:var(--sur);border:1px solid var(--bor);padding:9px;position:relative;overflow:hidden}
+.ab::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--cyn),transparent)}
+.at{font-size:7px;color:var(--cyn);letter-spacing:.2em;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:5px}
+.at::after{content:'';flex:1;height:1px;background:var(--bor)}
+#cw{position:relative;width:100%;aspect-ratio:1;margin-bottom:6px}
+#cc2{width:100%;height:100%;display:block}
+.mbr{display:flex;align-items:center;gap:5px;margin-bottom:4px}
+.msl{font-size:7px;color:var(--fnt);width:26px;flex-shrink:0;text-align:right}
+.mtk{flex:1;height:7px;background:var(--bg);border:1px solid var(--bor);overflow:hidden;position:relative}
+.mfl{height:100%;transition:width .25s,background .25s}
+.gr{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--bor);font-size:8px}
+.gr:last-child{border-bottom:none}.gl{color:var(--dim)}.gv{font-weight:700}
+.ivb{text-align:center;padding:7px 0 3px}
+.ivt{font-size:16px;font-weight:700;letter-spacing:.18em;transition:color .3s}
+.idr{display:flex;justify-content:space-between;font-size:8px;color:var(--dim);margin-top:3px}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bor2)}
 </style>
 </head>
 <body>
-
-<div id="mobile-block">
-  <div class="mb-icon">⬡ ⬡ ⬡</div>
-  <p><span>TERMINAL ACCESS RESTRICTED</span>Insufficient resolution for micro-structural analysis.<br>Research Terminal Required.<br><br><span style="color:#333;font-size:9px">gie-soliton.com/ai · GIE-Soliton V2.3</span></p>
-</div>
-
 <div id="app">
-  <div id="hdr">
-    <div class="hdr-title">
-      <div class="t1">GIE-SOLITON V2.3</div>
-      <div class="t2">ATOMIC INTEGRITY · VERIFICATION LAB · Ma (2026)</div>
-    </div>
-    <div class="status-bar">
-      <div class="stat-cell">
-        <div class="stat-label">Data_Source</div>
-        <div class="stat-value live" id="stat-source">BINANCE_WS</div>
-        <div class="stat-sub">btcusdt@aggTrade</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">Avg_Φ_Global</div>
-        <div class="stat-value" id="stat-phi">—</div>
-        <div class="stat-sub">rolling vol index</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">Rejection_Rate</div>
-        <div class="stat-value" id="stat-rej">—</div>
-        <div class="stat-sub">AI gate · filtered</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">Entropy_H</div>
-        <div class="stat-value" id="stat-entropy">—</div>
-        <div class="stat-sub">market disorder</div>
-      </div>
-      <div class="stat-cell">
-        <div class="stat-label">BTC Ticks/s</div>
-        <div class="stat-value" id="stat-tps">—</div>
-        <div class="stat-sub">live ws events</div>
-      </div>
-    </div>
-    <div class="hdr-controls">
-      <div id="ws-status"><div id="ws-dot"></div><span id="ws-label">CONNECTING</span></div>
-      <button class="btn" id="btn-research">Research Mode</button>
-      <button class="btn peer-btn" id="btn-peer">Peer Review</button>
-      <button class="btn" id="btn-manual">[Manual]</button>
-    </div>
+<div id="hdr">
+  <div><div class="t1">GIE-SOLITON V2.5 AWACS</div><div class="t2">STRUCTURAL ADMISSIBILITY GATEWAY · Ma (2026) · ORCID 0009-0004-2456-9098</div></div>
+  <div class="sbar">
+    <div class="sc"><div class="sl">Source</div><div class="sv live" id="h-src">SIM</div><div class="ss">binance aggTrade</div></div>
+    <div class="sc"><div class="sl">τ threshold</div><div class="sv hot" id="h-tau">—</div><div class="ss">p=0.01 · BTC primary</div></div>
+    <div class="sc"><div class="sl">CFR ρ_LL</div><div class="sv" id="h-rho">—</div><div class="ss">4-ch · pre_drift &gt;0.60</div></div>
+    <div class="sc"><div class="sl">MSTS Active</div><div class="sv" id="h-msts">— / 6</div><div class="ss">resonance_k=3</div></div>
+    <div class="sc"><div class="sl">Admission</div><div class="sv" id="h-adm">—</div><div class="ss">gate · current tick</div></div>
   </div>
-
-  <div id="sub-hdr">
-    <span><span class="pulse-dot"></span>LIVE · BINANCE WS · δ=5 USD · W=100 · τ=5th pct · BTC: event-driven · others: sim</span>
-    <span id="tick-counter">TICK 0000</span>
-    <span>AI_t = M_t / (|ΔP_t| + ε) &nbsp;·&nbsp; 𝒜 = {t : AI_t ≤ τ}</span>
+  <div class="hr">
+    <div id="tkr">0 tk/s</div>
+    <div id="ws-pill"><div id="ws-dot"></div><span id="ws-lbl">SIM</span></div>
   </div>
-
-  <div id="main-grid">
-    <div id="elite-board">
-      <div class="board-header">
-        <h2>◈ Elite Board · 12 Instruments · BTC/USDT: BINANCE LIVE</h2>
-        <span style="font-size:8px;color:var(--text-faint)">border = AI gate · Research Mode: AI_t (purple) + τ (dashed)</span>
-      </div>
-      <div class="cards-grid" id="cards-grid"></div>
+</div>
+<div id="sub">
+  <span>δ=15.0 · W=100 · τ_pct=0.01 · MSTS_σ=2.5× · ε=1e-9 · HORIZON=500</span>
+  <span>CFR lead-lag · MSTS resonance sweep · IFF self-impact filter</span>
+</div>
+<div id="fsm">
+  <span style="font-size:7px;color:var(--fnt);margin-right:3px">FSM →</span>
+  <div class="fn sACTIVE"          id="fACTIVE">         <div class="fd" style="background:var(--grn)"></div>ACTIVE</div>
+  <div class="fn sPRE_DRIFT"       id="fPRE_DRIFT">      <div class="fd" style="background:var(--amb)"></div>PRE_DRIFT</div>
+  <div class="fn sRESONANCE"       id="fRESONANCE">      <div class="fd" style="background:var(--pur)"></div>RESONANCE</div>
+  <div class="fn sDRIFT_WARNING"   id="fDRIFT_WARNING">  <div class="fd" style="background:#f97316"></div>DRIFT_WARNING</div>
+  <div class="fn sFLASH_COLLAPSE"  id="fFLASH_COLLAPSE"> <div class="fd" style="background:var(--red)"></div>FLASH_COLLAPSE</div>
+  <div class="fn sPHOENIX_STANDBY" id="fPHOENIX_STANDBY"><div class="fd" style="background:var(--noi)"></div>PHOENIX_STANDBY</div>
+  <div class="fn sRECOVERY"        id="fRECOVERY">       <div class="fd" style="background:var(--cyn)"></div>RECOVERY</div>
+  <div class="fn sLOCKED"          id="fLOCKED">         <div class="fd" style="background:var(--red)"></div>LOCKED 🔒</div>
+</div>
+<div id="ml">
+  <div id="cc">
+    <div class="sh"><h2>Instrument Monitoring Array</h2><span style="font-size:7px;color:var(--fnt)">BTC · ETH · SOL</span></div>
+    <div class="cg" id="cg"></div>
+  </div>
+  <div id="ap">
+    <div class="ab">
+      <div class="at">CFR LEAD-LAG RADAR</div>
+      <div id="cw"><canvas id="cc2"></canvas></div>
+      <div class="gr"><div class="gl">ρ_LL weighted</div><div class="gv" id="a-rho">—</div></div>
+      <div class="gr"><div class="gl">Pre-Drift flag</div><div class="gv" id="a-pd">—</div></div>
+      <div class="gr"><div class="gl">Batch tick</div><div class="gv" id="a-bt">0/26</div></div>
     </div>
-    <div id="right-panel">
-      <div class="panel-box">
-        <div class="panel-title">Global Matrix · 60</div>
-        <div id="matrix-grid"></div>
-        <div id="rejection-bar-wrap">
-          <div class="rbar-label"><span>AI Gate Rejection</span><span id="rbar-pct">—</span></div>
-          <div class="rbar-track"><div class="rbar-fill" id="rbar-fill" style="width:0%"></div></div>
-        </div>
+    <div class="ab">
+      <div class="at">MSTS RESONANCE SWEEP</div>
+      <div id="mb">
+        <div class="mbr"><div class="msl">W8</div>  <div class="mtk"><div class="mfl" id="m0"></div></div></div>
+        <div class="mbr"><div class="msl">W16</div> <div class="mtk"><div class="mfl" id="m1"></div></div></div>
+        <div class="mbr"><div class="msl">W26</div> <div class="mtk"><div class="mfl" id="m2"></div></div></div>
+        <div class="mbr"><div class="msl">W40</div> <div class="mtk"><div class="mfl" id="m3"></div></div></div>
+        <div class="mbr"><div class="msl">W60</div> <div class="mtk"><div class="mfl" id="m4"></div></div></div>
+        <div class="mbr"><div class="msl">W100</div><div class="mtk"><div class="mfl" id="m5"></div></div></div>
       </div>
-      <div class="panel-box">
-        <div class="panel-title">Gate Statistics</div>
-        <div class="gate-row"><span class="lbl">BTC ticks total</span><span class="val val-amber"  id="gs-total">—</span></div>
-        <div class="gate-row"><span class="lbl">AI-Admitted</span>   <span class="val val-purple" id="gs-admitted">—</span></div>
-        <div class="gate-row"><span class="lbl">Rejected</span>      <span class="val val-noise"  id="gs-rejected">—</span></div>
-        <div class="gate-row"><span class="lbl">Lock-on events</span><span class="val val-purple" id="gs-lockon">—</span></div>
-        <div class="gate-row"><span class="lbl">FAR reduction</span> <span class="val val-green">+1.0 pp</span></div>
-        <div class="gate-row"><span class="lbl">Slippage saved</span><span class="val val-green">−4.1 bps</span></div>
-        <div class="gate-row"><span class="lbl">p-value</span>       <span class="val val-text">&lt; 0.001</span></div>
-      </div>
-      <div class="panel-box">
-        <div class="panel-title">Event Log</div>
-        <div id="sys-log"></div>
-      </div>
+      <div class="gr" style="margin-top:5px"><div class="gl">Active ch</div><div class="gv" id="a-mc">—/6</div></div>
+      <div class="gr"><div class="gl">σ_limit</div><div class="gv" id="a-sg">—</div></div>
+      <div class="gr"><div class="gl">Resonance</div><div class="gv" id="a-rs">OFF</div></div>
+    </div>
+    <div class="ab">
+      <div class="at">IFF IDENTIFICATION</div>
+      <div class="ivb"><div class="ivt in" id="a-iv">NEUTRAL</div></div>
+      <div class="idr"><span>Damping</span><span id="a-dp">1.000</span></div>
+      <div class="gr" style="margin-top:5px"><div class="gl">AI_raw_log</div><div class="gv" id="a-ar">—</div></div>
+      <div class="gr"><div class="gl">AI_adj_log</div><div class="gv" id="a-aa">—</div></div>
+      <div class="gr"><div class="gl">∇AI</div><div class="gv" id="a-na">—</div></div>
     </div>
   </div>
 </div>
-
-<!-- ═══ Glossary Modal ═══ -->
-<div class="modal-overlay" id="glossary-overlay">
-  <div id="glossary-modal">
-    <div class="gloss-hdr">
-      <h3>Term Reference · Dual Interpretation</h3>
-      <button class="modal-close" id="close-gloss">[ CLOSE ]</button>
-    </div>
-    <div class="gloss-grid">
-      <div class="gloss-col">
-        <div class="gloss-col-title"><span>▸</span> Commander · Intuitive</div>
-        <dl>
-          <div class="gloss-term"><dt>Momentum</dt><dd>The propulsive force that allows price to travel significant distance on thin volume. The less liquidity present, the farther the same capital can push price — a defining feature of <em>void-driven</em> displacements.</dd></div>
-          <div class="gloss-term"><dt>Lock-on</dt><dd>The instant AI_t crosses below threshold τ. Price is punching through a <em>void zone</em> — the order book lacks sufficient resting orders to absorb impact, and directional pressure tends to persist rather than revert.</dd></div>
-          <div class="gloss-term"><dt>Reversion / False Activation</dt><dd>When price moves but AI_t is elevated, it signals dense two-sided participation. Such displacements lack persistence and revert rapidly. The AI gate intercepts and suppresses them.</dd></div>
-          <div class="gloss-term"><dt>Admissibility Queue (Standby)</dt><dd>The system's resting state — scanning continuously but not triggering. All 60 instruments pulse quietly under monitoring, awaiting the next genuine liquidity-void event.</dd></div>
-        </dl>
-      </div>
-      <div class="gloss-col">
-        <div class="gloss-col-title"><span>▸</span> Researcher · Physical</div>
-        <dl>
-          <div class="gloss-term"><dt>Measure Theory</dt><dd>Atomic Integrity re-orders price displacement events by their participation density. AI_t = M_t / (|ΔP_t| + ε) defines the <em>executed mass density per unit displacement</em>, constructing a natural measure over market microstructure events.</dd></div>
-          <div class="gloss-term"><dt>Manifold Projection</dt><dd>The admissible set 𝒜 = {t : AI_t ≤ τ} forms a <em>low-density submanifold</em> of the high-dimensional market state space. Activation logic projects the raw tick stream onto this manifold before downstream execution.</dd></div>
-          <div class="gloss-term"><dt>Nonlinear Soliton</dt><dd>A price displacement propagating through an extremely thin order book with stable amplitude and velocity — analogous to a solitary wave in a low-resistance medium. Ψ_t is its real-time acceleration estimator.</dd></div>
-          <div class="gloss-term"><dt>Energy Density</dt><dd>The inverse of M_t / |ΔP_t| can be read as <em>price impact power per unit of executed volume</em>. Low AI_t corresponds to high impact efficiency — small capital produces superlinear displacement in a depleted order book.</dd></div>
-        </dl>
-      </div>
-    </div>
-  </div>
 </div>
-
-<!-- ═══ Peer Review Modal ═══ -->
-<div class="modal-overlay" id="peer-review-overlay">
-  <div id="peer-review-modal">
-    <div class="pr-hdr">
-      <div>
-        <div class="pr-title">🔱 GIE-Soliton V2.3 · Structural Admissibility Spec</div>
-        <div class="pr-sub">Peer Review · Deep Logic Documentation · Ma (2026) · ORCID: 0009-0004-2456-9098</div>
-      </div>
-      <button class="modal-close" id="close-peer">[ CLOSE ]</button>
-    </div>
-    <div class="pr-body">
-
-      <div class="pr-section" data-n="§ 1 — Activation Discipline">
-        <h4>From Prediction to Activation Discipline</h4>
-        <p>Most execution research conflates directional forecasting with execution gating. GIE-Soliton separates the two by introducing an <em>Admissibility Gate</em> (𝒜). We do not predict the next move; we determine whether the current market structure is structurally eligible for activation based on participation density.</p>
-        <p>The core shift: from "where will price go?" to "is this displacement structurally admissible?" This eliminates a large class of false positives generated by dense two-sided participation — moves that appear large on the price axis but carry no forward persistence.</p>
-      </div>
-
-      <div class="pr-section" data-n="§ 2 — Atomic Integrity Definition">
-        <h4>Atomic Integrity (AI) — Formal Definition</h4>
-        <p>Let $P_t$ denote the mid-price and $\text{Vol}_t$ the executed volume at time $t$. Over lookback window $W \in \mathbb{Z}_{>0}$:</p>
-        $$M_t = \sum_{i=t-W}^{t} \text{Vol}_i \qquad \Delta P_t = P_t - P_{t-W}$$
-        <p>The <em>Atomic Integrity</em> metric at time $t$ is defined as:</p>
-        $$\text{AI}_t = \frac{M_t}{|\Delta P_t| + \varepsilon}$$
-        <div class="pr-deflist">
-          <dl class="pr-def"><dt>$M_t$ — Executed Mass</dt><dd>Cumulative traded volume over window $W$. Measures total market participation supporting the observed displacement.</dd></dl>
-          <dl class="pr-def"><dt>$|\Delta P_t|$ — Displacement</dt><dd>Net absolute price movement over $W$. Captures kinematic magnitude without directional bias.</dd></dl>
-          <dl class="pr-def"><dt>$\varepsilon = 10^{-9}$</dt><dd>Numerical stabiliser preventing division-by-zero. Chosen below any physically meaningful price movement at Binance tick resolution.</dd></dl>
-          <dl class="pr-def"><dt>Low $\text{AI}_t$</dt><dd>Price moved significantly on thin volume — hallmark of a <em>liquidity void</em>. These events exhibit higher forward persistence $R_{t \to t+H}$ (Ma 2026, Figure 2).</dd></dl>
-          <dl class="pr-def"><dt>High $\text{AI}_t$</dt><dd>Dense participation underpins the displacement. High reversion probability. Gate closed.</dd></dl>
-        </div>
-        <p>The admissible set (Ma 2026, §4.1):</p>
-        $$\mathcal{A} = \bigl\{t : \text{AI}_t \leq \tau\bigr\}$$
-        <p>where $\tau$ is the $p$-th percentile of the trailing empirical distribution of $\text{AI}_t$. Primary specification: $p = 5\%$, $W = H = 100$ ticks, $\varepsilon = 10^{-9}$.</p>
-      </div>
-
-      <div class="pr-section" data-n="§ 3 — Numerical Robustness">
-        <h4>Welford's Algorithm — Non-Asymptotic Numerical Stability</h4>
-        <p>At millisecond resolution over 5,500+ instruments, naive rolling variance via $(\sum x^2) - n\bar{x}^2$ accumulates catastrophic cancellation error. All rolling statistics ($M_t$, $\Phi$, trailing $\tau$ distribution) use <em>Welford's Online Algorithm</em>:</p>
-        $$\bar{x}_n = \bar{x}_{n-1} + \frac{x_n - \bar{x}_{n-1}}{n} \qquad S_n = S_{n-1} + (x_n - \bar{x}_{n-1})(x_n - \bar{x}_n)$$
-        <p>$O(1)$ time and $O(1)$ space with zero accumulated floating-point drift. A strict requirement for tick-by-tick deployment where stability cannot be deferred to batch recomputation.</p>
-        <div class="pr-algo"><span class="kw">Algorithm</span> AtomicIntegrityGate — deterministic single-pass:
-  <span class="cm">Input:</span>  tick stream (P_t, V_t), window W, threshold tau
-  <span class="cm">State:</span>  price_deque(maxlen=W+1), cum_vol=0, ai_history=[]
-
-  <span class="kw">for each</span> tick t:
-    price_deque.append(P_t)
-    cum_vol += V_t
-    <span class="kw">if</span> deque full: cum_vol -= V_{t-W}         <span class="cm">← O(1) slide</span>
-    delta_P = |price_deque[-1] - price_deque[0]|
-    AI_t    = cum_vol / (delta_P + <span class="val">1e-9</span>)
-    tau     = percentile(ai_history, <span class="val">5</span>)          <span class="cm">← trailing dist.</span>
-    <span class="kw">if</span> AI_t &lt;= tau: <span class="kw">activate</span> downstream      <span class="cm">← t ∈ 𝒜</span></div>
-      </div>
-
-      <div class="pr-section" data-n="§ 4 — Soliton Detection & Kinematic Compensation">
-        <h4>Ψ Operator — Discrete Laplacian &amp; Adaptive Prediction Weight</h4>
-        <p>The second-order price difference $\Psi_t$ (discrete Laplacian) serves as a real-time price acceleration estimator:</p>
-        $$\Psi_t = P_t - 2P_{t-1} + P_{t-2}$$
-        <p>This is the discrete analog of $\partial^2 P / \partial t^2$. It is asymmetric under time reversal in the presence of directional flow, giving it causal sensitivity to structural breaks. The prediction weight for kinematic latency compensation is:</p>
-        $$w = \exp\!\bigl(-k \cdot |\Psi|_{\text{normalized}}\bigr)$$
-        <p>When $|\Psi_t| \approx 0$ (constant-velocity regime), $w \to 1$ and full kinematic compensation $\hat{P} = P + v\Delta t + \tfrac{1}{2}a\Delta t^2$ is applied. When $|\Psi_t|$ is large (accelerating/structural regime), $w \to 0$ and raw observed price is used — preventing the compensator from amplifying model error during regime breaks.</p>
-      </div>
-
-      <div class="pr-section" data-n="§ 5 — Empirical Results (Ma 2026)">
-        <h4>Empirical Validation — BTC/USDT · Binance Vision · Millisecond Resolution</h4>
-        <p>Primary specification: $W = H = 100$ ticks, $\tau = 5\%$, $\delta = 5$ USD microstructural noise floor. Evaluation panel: 2024-07-23 (range-bound control) and 2024-08-05 (flash-crash stress event).</p>
-        <table class="pr-table">
-          <thead><tr><th>Gate</th><th>N (activations)</th><th>FAR</th><th>Reduction</th><th>Comment</th></tr></thead>
-          <tbody>
-            <tr><td>Baseline</td><td>7,798</td><td>11.0%</td><td>—</td><td>No gate applied</td></tr>
-            <tr><td>VPIN Gate</td><td>112</td><td class="td-red">25.0%</td><td class="td-red">−14.0 pp</td><td>Degenerate under stress</td></tr>
-            <tr><td>OFI Gate</td><td>6,120</td><td>10.5%</td><td class="td-green">+0.5 pp</td><td>Moderate improvement</td></tr>
-            <tr><td>AI Gate</td><td>5,982</td><td class="td-purple">10.0%</td><td class="td-green">+1.0 pp **</td><td>Best structural gain</td></tr>
-          </tbody>
-        </table>
-        <p style="margin-top:8px">** $p < 0.001$, bootstrap $B = 3{,}000$ resamples. Under $\delta = 15$ USD: reduction rises to $+8.22$ pp (95% CI: [5.87%, 10.41%]). VWAP simulation: AI gate achieves $-4.1$ bps average slippage reduction vs. baseline. Parameter stability confirmed across 12 out-of-sample months and ETH/USDT, SOL/USDT cross-asset validation.</p>
-      </div>
-
-    </div>
-  </div>
-</div>
-
 <script>
-/* ════════════════════════════════════════════════════════════════════════
-   GIE-Soliton V2.3 · Verification Lab
-   Live: Binance WS btcusdt@aggTrade (event-driven AI gate)
-   Sim:  Remaining 59 instruments (300ms cycle)
-   Ma (2026) — Structural Admissibility in High-Frequency Markets
-   ════════════════════════════════════════════════════════════════════════ */
+"use strict";
+let isLive=false;
+const lastAI=new Float64Array(3);
+const CFG={TAU:.01,EPS:1e-9,W:100,CFR_T:.6,MS:2.5,RK:3,PSI:500,NC:-.05,RT:20,MW:100};
+const INST=[{id:"BTC-USDT",sym:"BTCUSDT",ex:"BINANCE SPOT",s:60000},
+            {id:"ETH-USDT",sym:"ETHUSDT",ex:"BINANCE FUTURES",s:3100},
+            {id:"SOL-USDT",sym:"SOLUSDT",ex:"BINANCE SPOT",s:170}];
+const SI={BTCUSDT:0,ETHUSDT:1,SOLUSDT:2};
+const SC={ACTIVE:"#22c55e",PRE_DRIFT:"#f59e0b",RESONANCE:"#a855f7",
+          DRIFT_WARNING:"#f97316",FLASH_COLLAPSE:"#ef4444",
+          PHOENIX_STANDBY:"#4b5563",RECOVERY:"#06b6d4",LOCKED:"#ef4444"};
 
-// ── Seeded RNG (must precede instruments init) ─────────────────────────
-let _seed = 20260301;
-function rng() {
-  _seed = (_seed * 1664525 + 1013904223) & 0xffffffff;
-  return ((_seed >>> 0) / 0xffffffff);
+function wC(){return{n:0,m:0,M:0}}
+function wU(w,x){w.n++;const d=x-w.m;w.m+=d/w.n;w.M+=d*(x-w.m)}
+function wS(w){return w.n>1?Math.sqrt(w.M/(w.n-1)):0}
+function bL(a,v){let lo=0,hi=a.length;while(lo<hi){const m=(lo+hi)>>>1;if(a[m]<v)lo=m+1;else hi=m}return lo}
+function bI(a,v){a.splice(bL(a,v),0,v)}
+
+function mkSt(s){return{
+  price:s,pp:s,cumV:0,aiL:0,aiA:0,nab:0,tau:null,score:0,
+  state:"PHOENIX_STANDBY",rhoLL:0,cpd:false,iffV:"NEUTRAL",damp:1,
+  mPSD:new Float64Array(6),mEn:new Float64Array(6),
+  pSq:new Float64Array(100),pH:0,pC:0,mSL:1,mSW:wC(),
+  aiS:[],aiH:new Float64Array(500),aiHH:0,aiHC:0,wAI:wC(),
+  pR:new Float64Array(3),pRH:0,pRC:0,
+  cB:new Float64Array(24),cR:new Float64Array(4),
+  cLU:new Int32Array(4).fill(-999),cPA:new Float64Array(4),cPP:0,
+  spB:new Float64Array(80),spH:0,spC:0,tIB:0,_rec:0,
+  cv:null,cx:null
+}}
+const ST=INST.map(i=>mkSt(i.s));
+
+function msts(st,p){
+  const r=st.pR,h=(st.pRH+1)%3;r[h]=p;st.pRH=h;
+  if(st.pRC<3)st.pRC++;
+  let pT=0,pS=0;
+  if(st.pRC>=3){pT=r[h]-2*r[(h+2)%3]+r[(h+1)%3];pS=pT*pT}
+  const nh=(st.pH+1)%CFG.MW;
+  st.pSq[nh]=pS;st.pH=nh;if(st.pC<CFG.MW)st.pC++;
+  const c=st.pC,b=st.pSq;
+  let e0=st.mEn[0]+pS,e1=st.mEn[1]+pS,e2=st.mEn[2]+pS,
+      e3=st.mEn[3]+pS,e4=st.mEn[4]+pS,e5=st.mEn[5]+pS;
+  if(c>8) e0-=b[(nh-8+CFG.MW)%CFG.MW];
+  if(c>16)e1-=b[(nh-16+CFG.MW)%CFG.MW];
+  if(c>26)e2-=b[(nh-26+CFG.MW)%CFG.MW];
+  if(c>40)e3-=b[(nh-40+CFG.MW)%CFG.MW];
+  if(c>60)e4-=b[(nh-60+CFG.MW)%CFG.MW];
+  if(c>100)e5-=b[(nh-100+CFG.MW)%CFG.MW];
+  e0=Math.max(0,e0);e1=Math.max(0,e1);e2=Math.max(0,e2);
+  e3=Math.max(0,e3);e4=Math.max(0,e4);e5=Math.max(0,e5);
+  st.mEn[0]=e0;st.mEn[1]=e1;st.mEn[2]=e2;
+  st.mEn[3]=e3;st.mEn[4]=e4;st.mEn[5]=e5;
+  const p0=e0/8,p1=e1/16,p2=e2/26,p3=e3/40,p4=e4/60,p5=e5/100;
+  st.mPSD[0]=p0;st.mPSD[1]=p1;st.mPSD[2]=p2;
+  st.mPSD[3]=p3;st.mPSD[4]=p4;st.mPSD[5]=p5;
+  wU(st.mSW,(p0+p1+p2+p3+p4+p5)/6);
+  if(st.mSW.n>=20)st.mSL=st.mSW.m+CFG.MS*wS(st.mSW);
+  let a=0;const sl=st.mSL;
+  if(p0>sl)a++;if(p1>sl)a++;if(p2>sl)a++;
+  if(p3>sl)a++;if(p4>sl)a++;if(p5>sl)a++;
+  return{res:a>=CFG.RK,a,pT}
 }
 
-// ── Constants ──────────────────────────────────────────────────────────
-const WINDOW_W = 100;
-const TAU_PCT  = 0.05;
-const EPSILON  = 1e-9;
-const N_ELITE  = 12;
-const N_MATRIX = 60;
-const CYCLE_MS = 300;
-const HIST_LEN = 80;
-const AI_DIST  = 200;
-
-// ── Symbols ────────────────────────────────────────────────────────────
-const SYMBOLS = [
-  'BTC/USDT','ETH/USDT','SOL/USDT','BNB/USDT',
-  '600519','000858','601318','300750',
-  'NVDA','TSLA','AAPL','GLD',
-  ...['000001','600036','601166','002594','600900','601668',
-      '000333','600276','601398','000725','002415','600030',
-      '000002','601088','600887','601857','002352','000568',
-      '600309','601688','002714','600660','000100','601601',
-      '600019','000776','601628','002304','600028','601919',
-      '000063','600050','601186','002049','600104','000895',
-      '601818','002460','600000','000069','601390','002271',
-      '600690','000786','601985','002572','600383','600426'],
-];
-
-// ── Instrument factory ─────────────────────────────────────────────────
-function makeInst(sym, idx) {
-  const p0 = sym==='BTC/USDT'?62000 : sym==='ETH/USDT'?3240+rng()*40 :
-             sym==='SOL/USDT'?148+rng()*5 : sym==='BNB/USDT'?580+rng()*10 :
-             sym==='NVDA'?875+rng()*20 : sym==='TSLA'?175+rng()*10 :
-             sym==='AAPL'?189+rng()*8 : sym==='GLD'?195+rng()*5 :
-             50+idx*3+rng()*20;
-  return {
-    sym, price:p0, prevPrice:p0, priceHist:[], aiHist:[], tauHist:[],
-    aiDistrib:[], cumVol:0, volBuf:[], priceBuf:[],
-    admitted:false, lockon:false, lockonTimer:0,
-    phi:0.5+rng()*2, move:0, aiVal:null, tau:null,
-    isLive: sym==='BTC/USDT',
-  };
-}
-const instruments = SYMBOLS.map(makeInst);
-const btc = instruments[0];
-
-// ── Counters ───────────────────────────────────────────────────────────
-let researchMode = false, uiTick = 0;
-let btcTotal = 0, btcAdmit = 0, btcReject = 0, gsLockon = 0;
-let tpsCount = 0, tpsDisplay = 0;
-let cardEls = [], matrixDots = [];
-
-// ── Core AI gate — O(1) per tick ───────────────────────────────────────
-function processTickAI(inst, price, vol) {
-  inst.prevPrice = inst.price;
-  inst.price     = price;
-  inst.move      = price - inst.prevPrice;
-
-  inst.priceBuf.push(price);
-  inst.volBuf.push(vol);
-  inst.cumVol += vol;
-  if (inst.priceBuf.length > WINDOW_W + 1) {
-    inst.cumVol -= inst.volBuf.shift();
-    inst.priceBuf.shift();
+function cfr(st,pL,ax,tk,be){
+  const bv=st.cB,rh=st.cR;
+  for(let k=0;k<4;k++){
+    const age=tk-st.cLU[k];let y;
+    if(k<ax.length){st.cLU[k]=tk;y=ax[k]}else{if(age>2)continue;y=st.cPA[k]}
+    if(tk-st.cLU[k]>2)continue;
+    const b=k*6,n=bv[b]+1;bv[b]=n;
+    const dx=pL-bv[b+1],dy=y-bv[b+2],iv=1/n;
+    bv[b+1]+=dx*iv;bv[b+2]+=dy*iv;
+    const dx2=pL-bv[b+1],dy2=y-bv[b+2];
+    bv[b+3]+=dx*dx2;bv[b+4]+=dy*dy2;bv[b+5]+=dx*dy2;
+    st.cPA[k]=y;
   }
-
-  let aiVal = null;
-  if (inst.priceBuf.length === WINDOW_W + 1) {
-    const dP = Math.abs(inst.priceBuf.at(-1) - inst.priceBuf[0]);
-    aiVal = inst.cumVol / (dP + EPSILON);
-    inst.aiDistrib.push(Math.min(aiVal, 10));
-    if (inst.aiDistrib.length > AI_DIST) inst.aiDistrib.shift();
+  st.cPP=pL;
+  if(!be)return;
+  let rs=0,ws=0,lk=-1;
+  for(let k=0;k<4;k++){
+    const age=tk-st.cLU[k];if(age>2){rh[k]=0;continue}
+    const b=k*6,nk=bv[b];if(nk<30)continue;
+    const dn=bv[b+3]*bv[b+4];let rk=0;
+    if(dn>1e-14){rk=bv[b+5]/Math.sqrt(dn);rk=Math.max(-1,Math.min(1,rk))}
+    rh[k]=rk;rs+=Math.abs(rk);ws++;
+    if(rk>CFG.CFR_T&&st.cPA[k]<bv[b+2]-0.02&&pL>=st.cPP-0.01&&lk<0)lk=k;
   }
+  const rl=ws>0?rs/ws:0;st.rhoLL=rl;st.cpd=(lk>=0)&&(rl>CFG.CFR_T);
+}
 
-  let tau = null;
-  if (inst.aiDistrib.length >= 20) {
-    const s = [...inst.aiDistrib].sort((a,b)=>a-b);
-    tau = s[Math.floor(TAU_PCT * s.length)];
+function iff(st,cv,dp,vs,al){
+  const iS=1e-5*vs,ma=Math.max(cv-vs*.1,CFG.EPS);
+  const da=Math.abs(dp-iS),aa=ma/(da+CFG.EPS);
+  const al2=Math.log10(Math.max(aa,CFG.EPS));st.aiA=al2;
+  const T=-3,rC=al<T,aC=al2<T,mg=al2-al;
+  let v="NEUTRAL";
+  if(rC&&!aC&&mg>=.5)v="FRIEND";else if(rC&&aC)v="FOE";
+  const vf=vs/Math.max(cv,CFG.EPS);
+  return{v,d:v==="FRIEND"?Math.max(0,1-vf*2.5):1}
+}
+
+function tick(st,p,vol,tk){
+  const be=(st.tIB===25);st.tIB=(st.tIB+1)%26;
+  const mr=msts(st,p);
+  st.cumV=Math.max(st.cumV*.98+vol,CFG.EPS);
+  const dp=Math.abs(p-st.pp);
+  const ar=st.cumV/(dp+CFG.EPS),al=Math.log10(Math.max(ar,CFG.EPS));
+  st.nab=(al-st.aiL)/300;st.aiL=al;
+  wU(st.wAI,al);
+  if(st.aiHC>=500){
+    const o=st.aiH[st.aiHH],pos=bL(st.aiS,o);
+    if(pos<st.aiS.length&&st.aiS[pos]===o)st.aiS.splice(pos,1);
   }
-
-  const prev = inst.admitted;
-  inst.admitted    = aiVal !== null && tau !== null && aiVal <= tau;
-  inst.lockon      = inst.admitted && !prev;
-  if (inst.lockon)          inst.lockonTimer = 6;
-  if (inst.lockonTimer > 0) inst.lockonTimer--;
-  inst.aiVal = aiVal;
-  inst.tau   = tau;
-
-  const scale = inst.price > 10000 ? 80 : inst.price > 100 ? 3 : 1;
-  inst.phi = 0.9 * inst.phi + 0.1 * Math.abs(inst.move) / (scale + EPSILON);
-
-  inst.priceHist.push(price);
-  if (aiVal !== null) inst.aiHist.push(Math.min(aiVal,10));
-  if (tau   !== null) inst.tauHist.push(tau);
-  if (inst.priceHist.length > HIST_LEN) inst.priceHist.shift();
-  if (inst.aiHist.length    > HIST_LEN) inst.aiHist.shift();
-  if (inst.tauHist.length   > HIST_LEN) inst.tauHist.shift();
-}
-
-// ── Binance WebSocket ──────────────────────────────────────────────────
-let ws = null, wsTimer = null;
-
-function wsSetStatus(state) {
-  const dot = document.getElementById('ws-dot');
-  const lbl = document.getElementById('ws-label');
-  dot.className = state;
-  lbl.textContent = {connecting:'CONNECTING', live:'LIVE', error:'ERROR · RETRY'}[state]||'OFFLINE';
-  const src = document.getElementById('stat-source');
-  src.textContent = state==='live' ? 'BINANCE_WS_LIVE' : 'BINANCE_WS';
-  src.className   = `stat-value ${state==='live'?'live':'hot'}`;
-}
-
-function connectBinance() {
-  if (ws) { try { ws.close(); } catch(e){} }
-  wsSetStatus('connecting');
-  addLog('WS → wss://stream.binance.com:9443/ws/btcusdt@aggTrade', 'ws');
-  ws = new WebSocket('wss://stream.binance.com:9443/ws/btcusdt@aggTrade');
-
-  ws.onopen = () => {
-    wsSetStatus('live');
-    addLog('Binance WS connected · btcusdt@aggTrade live', 'admit');
-  };
-
-  ws.onmessage = (ev) => {
-    try {
-      const d = JSON.parse(ev.data);
-      const price = parseFloat(d.p), qty = parseFloat(d.q);
-      if (!isFinite(price)||!isFinite(qty)) return;
-
-      processTickAI(btc, price, qty);
-      btcTotal++; tpsCount++;
-      if (btc.admitted) btcAdmit++; else btcReject++;
-      if (btc.lockon) {
-        gsLockon++;
-        addLog(`[BTC LIVE] LOCK-ON  AI=${btc.aiVal?.toFixed(3)} ≤ τ=${btc.tau?.toFixed(3)}  P=${price.toFixed(2)}`, 'lockon');
-      }
-    } catch(e) {}
-  };
-
-  ws.onerror = () => { wsSetStatus('error'); addLog('WS error — reconnect in 5s', 'error'); };
-  ws.onclose = (e) => {
-    if (e.code !== 1000) {
-      wsSetStatus('error');
-      addLog(`WS closed (${e.code}) — reconnect in 5s`, 'error');
-      clearTimeout(wsTimer);
-      wsTimer = setTimeout(connectBinance, 5000);
-    }
-  };
-}
-
-setInterval(() => { tpsDisplay = tpsCount; tpsCount = 0; }, 1000);
-
-// ── Simulation (non-BTC) ───────────────────────────────────────────────
-function simulateDynamics(inst) {
-  const spike = rng() < 0.04, trend = rng() < 0.08;
-  const scale = inst.price > 10000 ? 80 : inst.price > 100 ? 3 : 1.2;
-  let move, vol;
-  if (spike)      { move=(rng()>.5?1:-1)*scale*(2+rng()*4);    vol=0.01+rng()*0.08; }
-  else if (trend) { move=(rng()>.5?1:-1)*scale*(0.5+rng()*1.5); vol=0.5+rng()*2.0; }
-  else            { move=(rng()-0.5)*scale*0.6;                  vol=0.8+rng()*3.5; }
-  processTickAI(inst, Math.max(inst.price*0.95, inst.price+move), vol);
-}
-
-// ── DOM builders ───────────────────────────────────────────────────────
-function buildCards() {
-  const g = document.getElementById('cards-grid');
-  g.innerHTML = ''; cardEls = [];
-  for (let i = 0; i < N_ELITE; i++) {
-    const inst = instruments[i];
-    const el = document.createElement('div');
-    el.className = `card${inst.isLive?' live-feed':''}`;
-    el.innerHTML = `
-      <div class="card-top"><div class="card-symbol">${inst.sym}</div><div class="card-badge" id="badge-${i}">WATCH</div></div>
-      <div class="card-price" id="price-${i}">—</div>
-      <div class="card-change" id="change-${i}">—</div>
-      <div class="card-metrics">
-        <div class="metric"><div class="metric-label">AI_t</div><div class="metric-val" id="ai-${i}">—</div></div>
-        <div class="metric"><div class="metric-label">τ (gate)</div><div class="metric-val" id="tau-${i}">—</div></div>
-        <div class="metric"><div class="metric-label">Φ (vol)</div><div class="metric-val" id="phi-${i}">—</div></div>
-        <div class="metric"><div class="metric-label">|ΔP|</div><div class="metric-val" id="dp-${i}">—</div></div>
-      </div>
-      <div class="sparkline-wrap" id="sw-${i}"><canvas class="sparkline" id="sp-${i}"></canvas></div>`;
-    g.appendChild(el); cardEls.push(el);
+  st.aiH[st.aiHH]=al;st.aiHH=(st.aiHH+1)%500;
+  if(st.aiHC<500)st.aiHC++;
+  bI(st.aiS,al);
+  const ns=st.aiS.length;
+  st.tau=ns>=50?st.aiS[Math.max(0,Math.floor(CFG.TAU*ns)-1)]:null;
+  const ir=iff(st,st.cumV,dp,vol*.02,al);
+  st.iffV=ir.v;st.damp=ir.d;
+  const ax=isLive
+    ?[lastAI[0]||al,lastAI[1]||al,lastAI[2]||al,al+(Math.random()-.5)*1e-4]
+    :[al+(Math.random()-.5)*1e-4,al+(Math.random()-.5)*1e-4,al+(Math.random()-.5)*1e-4,al+(Math.random()-.5)*1e-4];
+  cfr(st,al,ax,tk,be);
+  if(ar<1e-6||al<-3){st.state="LOCKED";st.score=0;st.pp=p;return}
+  if(mr.res){st.state="RESONANCE";st.score=0;st.pp=p;return}
+  if(Math.abs(mr.pT)>CFG.PSI){st.state="LOCKED";st.score=0;st.pp=p;return}
+  if(ir.v==="FOE"){st.state="PHOENIX_STANDBY";st.score=0;st.pp=p;return}
+  const ng=st.nab<CFG.NC;
+  if(st.state==="PHOENIX_STANDBY"){
+    if(al>-1&&st.nab>=0)st._rec++;else st._rec=0;
+    if(st._rec>=CFG.RT)st.state="RECOVERY";
+    st.score=0;st.pp=p;return;
   }
-}
-
-function buildMatrix() {
-  const g = document.getElementById('matrix-grid');
-  g.innerHTML = ''; matrixDots = [];
-  for (let i = 0; i < N_MATRIX; i++) {
-    const d = document.createElement('div');
-    d.className = 'matrix-dot'; d.title = instruments[i]?.sym||`SYM${i}`;
-    g.appendChild(d); matrixDots.push(d);
+  if(st.state==="RECOVERY"){
+    if(al>-1&&st.nab>=0)st._rec++;
+    else{st.state="PHOENIX_STANDBY";st._rec=0;st.score=0;st.pp=p;return}
+    if(st._rec>=CFG.RT){st.state="ACTIVE";st._rec=0}
+    st.score=0;st.pp=p;return;
   }
+  if(al<-3){st.state="FLASH_COLLAPSE";st.score=0;st.pp=p;return}
+  if(st.state==="FLASH_COLLAPSE"){st.state="PHOENIX_STANDBY";st.score=0;st.pp=p;return}
+  if(st.cpd)st.state="PRE_DRIFT";
+  else if(ng)st.state="DRIFT_WARNING";
+  else if(st.state==="PRE_DRIFT"&&!st.cpd)st.state="ACTIVE";
+  else if(st.state==="DRIFT_WARNING"&&!ng)st.state="ACTIVE";
+  else if(st.state!=="PRE_DRIFT"&&st.state!=="DRIFT_WARNING")st.state="ACTIVE";
+  const adm=(st.tau!==null)&&(al<=st.tau);
+  let sc=adm?1:0;sc*=ir.d;
+  if(st.cpd)sc*=Math.max(0,1-.5*(st.rhoLL||0));
+  st.score=Math.max(0,Math.min(1,sc));
+  st.spB[st.spH]=al;st.spH=(st.spH+1)%80;if(st.spC<80)st.spC++;
+  if(!isLive){lastAI[0]=ST[0].aiL;lastAI[1]=ST[1].aiL;lastAI[2]=ST[2].aiL}
+  st.pp=p;
 }
 
-// ── Sparkline ─────────────────────────────────────────────────────────
-function drawSparkline(i, inst) {
-  const cv = document.getElementById(`sp-${i}`);
-  const wr = document.getElementById(`sw-${i}`);
-  if (!cv || inst.priceHist.length < 2) return;
-  const W = cv.offsetWidth||200, H = cv.offsetHeight||36;
-  cv.width=W; cv.height=H;
-  const ctx = cv.getContext('2d');
-  ctx.clearRect(0,0,W,H);
-  wr.classList.toggle('research-mode', researchMode);
+// SIM RNG
+let _s=42;
+function rng(){_s=(_s*1664525+1013904223)&0xffffffff;return((_s>>>1)/2147483647.5)-1}
+function randn(){const u=(rng()+1)/2+1e-10,v=(rng()+1)/2;return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+const SP=INST.map(i=>i.s),SV=INST.map(()=>1.5);
 
-  const ps = inst.priceHist;
-  const pMin=Math.min(...ps), pRange=(Math.max(...ps)-pMin)||1;
-  const mP = p => H-2-((p-pMin)/pRange)*(H-4);
-  ctx.beginPath();
-  ctx.strokeStyle = inst.lockonTimer>0?'#a855f7':inst.admitted?'#22c55e':'#374151';
-  ctx.lineWidth=1;
-  ps.forEach((p,x)=>{ const px=(x/(ps.length-1))*W; x?ctx.lineTo(px,mP(p)):ctx.moveTo(px,mP(p)); });
-  ctx.stroke();
-
-  if (researchMode && inst.aiHist.length > 2) {
-    const ais=inst.aiHist, taus=inst.tauHist;
-    const aiMax=Math.max(...ais,...(taus.length?taus:[0]))*1.1||1;
-    const mA = v => H-2-(v/aiMax)*(H-4);
-    if (taus.length>1) {
-      ctx.beginPath(); ctx.setLineDash([2,3]); ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1;
-      taus.forEach((t,x)=>{ const px=(x/(taus.length-1))*W; x?ctx.lineTo(px,mA(t)):ctx.moveTo(px,mA(t)); });
-      ctx.stroke(); ctx.setLineDash([]);
-    }
-    ctx.beginPath(); ctx.strokeStyle='#a855f7'; ctx.lineWidth=1.5;
-    ais.forEach((v,x)=>{ const px=(x/(ais.length-1))*W; x?ctx.lineTo(px,mA(v)):ctx.moveTo(px,mA(v)); });
-    ctx.stroke();
-    ais.forEach((v,x)=>{ if(taus[x]!==undefined&&v<=taus[x]){ ctx.beginPath(); ctx.arc((x/(ais.length-1))*W,mA(v),1.5,0,Math.PI*2); ctx.fillStyle='#22c55e'; ctx.fill(); } });
-  }
-}
-
-// ── Card update ────────────────────────────────────────────────────────
-function updateCard(i, inst) {
-  const el = cardEls[i]; if (!el) return;
-  const fmt = p => p>1000?p.toFixed(0):p>10?p.toFixed(2):p.toFixed(3);
-  document.getElementById(`price-${i}`).textContent = fmt(inst.price);
-  const pct = inst.prevPrice ? ((inst.price-inst.prevPrice)/inst.prevPrice)*100 : 0;
-  const ch = document.getElementById(`change-${i}`);
-  ch.textContent = `${pct>=0?'+':''}${pct.toFixed(3)}%`;
-  ch.className   = `card-change ${pct>=0?'up':'dn'}`;
-  const aiEl = document.getElementById(`ai-${i}`);
-  if (inst.aiVal!==null) { aiEl.textContent=inst.aiVal>100?inst.aiVal.toFixed(0):inst.aiVal.toFixed(3); aiEl.className=`metric-val ${inst.admitted?'ai-admitted':'ai-rejected'}`; }
-  if (inst.tau!==null) document.getElementById(`tau-${i}`).textContent=inst.tau.toFixed(3);
-  document.getElementById(`phi-${i}`).textContent=inst.phi.toFixed(3);
-  const dP=inst.priceBuf.length>1?Math.abs(inst.priceBuf.at(-1)-inst.priceBuf[0]):0;
-  document.getElementById(`dp-${i}`).textContent=dP>100?dP.toFixed(0):dP.toFixed(3);
-  el.classList.remove('admitted','lockon');
-  const badge=document.getElementById(`badge-${i}`);
-  badge.className='card-badge'; badge.textContent='WATCH';
-  if (inst.lockonTimer>0){ el.classList.add('lockon'); badge.classList.add('lockon-badge'); badge.textContent='[LOCK-ON]'; }
-  else if (inst.admitted){ el.classList.add('admitted'); badge.classList.add('admitted-badge'); badge.textContent='ADMITTED'; }
-  drawSparkline(i, inst);
-}
-
-// ── Matrix update ──────────────────────────────────────────────────────
-function updateMatrix() {
-  instruments.forEach((inst,i) => {
-    if (i>=N_MATRIX) return;
-    matrixDots[i].className = 'matrix-dot'+(inst.lockonTimer>0?' active':inst.admitted?' recent-active':'');
+// DOM build
+function build(){
+  const g=document.getElementById("cg");
+  INST.forEach((ins,i)=>{
+    const st=ST[i],d=document.createElement("div");
+    d.className="card sPHOENIX_STANDBY";d.id="c"+i;
+    d.innerHTML=`
+    <div class="ctop">
+      <div><div class="csym">${ins.id}</div><div class="cex">${ins.ex}</div></div>
+      <div class="cbadge bPHOENIX_STANDBY" id="bd${i}">STANDBY</div>
+    </div>
+    <div class="cpr" id="pr${i}">—</div>
+    <div class="cch" id="ch${i}">—</div>
+    <div class="cm">
+      <div class="met"><div class="ml2">AI_LOG</div><div class="mv" id="ai${i}">—</div></div>
+      <div class="met"><div class="ml2">∇AI</div><div class="mv" id="nb${i}">—</div></div>
+      <div class="met"><div class="ml2">τ</div><div class="mv" id="ta${i}">—</div></div>
+      <div class="met"><div class="ml2">AI_ADJ</div><div class="mv" id="ad${i}">—</div></div>
+      <div class="met"><div class="ml2">ρ_LL</div><div class="mv" id="rl${i}">—</div></div>
+      <div class="met"><div class="ml2">SCORE</div><div class="mv" id="sc${i}">—</div></div>
+    </div>
+    <div class="spw"><canvas class="sp" id="sp${i}"></canvas></div>
+    <div class="srow">
+      <div class="slb">ADMIT</div>
+      <div class="stk"><div class="sfl" id="sf${i}" style="width:0%;background:#4b5563"></div></div>
+      <div class="snu" id="sn${i}">0.00</div>
+    </div>
+    <div class="irow"><span class="ilb">IFF:</span><span class="iv in" id="iv${i}">NEUTRAL</span></div>`;
+    g.appendChild(d);
+    st.cv=document.getElementById("sp"+i);st.cx=st.cv.getContext("2d");
   });
 }
 
-// ── Log ────────────────────────────────────────────────────────────────
-const logLines = [];
-function addLog(msg, type='noise') {
-  const n=new Date(), ts=`${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}:${String(n.getSeconds()).padStart(2,'0')}.${String(n.getMilliseconds()).padStart(3,'0')}`;
-  logLines.unshift({msg:`[${ts}] ${msg}`,type});
-  if (logLines.length>30) logLines.pop();
-  document.getElementById('sys-log').innerHTML=logLines.slice(0,12).map(l=>`<div class="log-line ${l.type}-log">${l.msg}</div>`).join('');
+// DOM cache
+const D={};
+function cache(){
+  INST.forEach((_,i)=>{D[i]={
+    card:document.getElementById("c"+i),
+    bd:document.getElementById("bd"+i),
+    pr:document.getElementById("pr"+i),
+    ch:document.getElementById("ch"+i),
+    ai:document.getElementById("ai"+i),
+    nb:document.getElementById("nb"+i),
+    ta:document.getElementById("ta"+i),
+    ad:document.getElementById("ad"+i),
+    rl:document.getElementById("rl"+i),
+    sc:document.getElementById("sc"+i),
+    sf:document.getElementById("sf"+i),
+    sn:document.getElementById("sn"+i),
+    iv:document.getElementById("iv"+i),
+  }});
 }
 
-// ── 300ms UI refresh ───────────────────────────────────────────────────
-function uiRefresh() {
-  uiTick++;
-  document.getElementById('tick-counter').textContent = `TICK ${String(uiTick).padStart(4,'0')}`;
+const pp0=[...INST.map(i=>i.s)];
 
-  let phiSum = btc.phi;
-  instruments.forEach((inst,i) => {
-    if (inst.isLive) return;
-    simulateDynamics(inst);
-    if (inst.lockon) { gsLockon++; addLog(`LOCK-ON  ${inst.sym.padEnd(10)} AI=${inst.aiVal?.toFixed(3)} ≤ τ=${inst.tau?.toFixed(3)}`,'lockon'); }
-    phiSum += inst.phi;
-  });
-
-  for (let i=0;i<N_ELITE;i++) updateCard(i,instruments[i]);
-  updateMatrix();
-
-  const phi = phiSum / N_MATRIX;
-  const totalChecked = btcTotal + uiTick*(N_MATRIX-1);
-  const totalAdmit   = btcAdmit + instruments.slice(1,N_MATRIX).filter(x=>x.admitted).length;
-  const rejRate      = totalChecked > 50 ? 1-(totalAdmit/totalChecked) : 0.86;
-  const entropy      = 0.30 + phi*0.003;
-
-  document.getElementById('stat-phi').textContent     = (1.2+phi*2.5).toFixed(4);
-  document.getElementById('stat-phi').className       = `stat-value ${phi>1.5?'hot':''}`;
-  document.getElementById('stat-rej').textContent     = (rejRate*100).toFixed(2)+'%';
-  document.getElementById('stat-entropy').textContent = entropy.toFixed(5);
-  document.getElementById('stat-tps').textContent     = tpsDisplay;
-  document.getElementById('stat-tps').className       = `stat-value ${tpsDisplay>5?'live':''}`;
-
-  const rp = Math.min(99,Math.round(rejRate*100));
-  document.getElementById('rbar-pct').textContent   = rp+'%';
-  document.getElementById('rbar-fill').style.width  = rp+'%';
-  document.getElementById('gs-total').textContent   = btcTotal.toLocaleString();
-  document.getElementById('gs-admitted').textContent= btcAdmit.toLocaleString();
-  document.getElementById('gs-rejected').textContent= btcReject.toLocaleString();
-  document.getElementById('gs-lockon').textContent  = gsLockon.toLocaleString();
-}
-
-// ── Controls ───────────────────────────────────────────────────────────
-document.getElementById('btn-research').addEventListener('click', function() {
-  researchMode = !researchMode;
-  this.classList.toggle('active', researchMode);
-  for (let i=0;i<N_ELITE;i++) drawSparkline(i,instruments[i]);
-  addLog(`Research mode ${researchMode?'ENABLED':'DISABLED'} — AI_t + τ overlay`,'admit');
-});
-
-document.getElementById('btn-peer').addEventListener('click', () => {
-  document.getElementById('peer-review-overlay').classList.add('open');
-  if (window.renderMathInElement)
-    renderMathInElement(document.getElementById('peer-review-modal'),
-      {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});
-});
-document.getElementById('close-peer').addEventListener('click', () => document.getElementById('peer-review-overlay').classList.remove('open'));
-document.getElementById('peer-review-overlay').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
-
-document.getElementById('btn-manual').addEventListener('click', () => document.getElementById('glossary-overlay').classList.add('open'));
-document.getElementById('close-gloss').addEventListener('click', () => document.getElementById('glossary-overlay').classList.remove('open'));
-document.getElementById('glossary-overlay').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
-
-// ── Init ───────────────────────────────────────────────────────────────
-buildCards(); buildMatrix();
-addLog('GIE-Soliton V2.3 · AI gate W=100 τ=5th δ=5USD · Ma (2026)','admit');
-
-// Fast warmup — 50 ticks to populate simulation history
-let wc = 0;
-const warmup = setInterval(() => {
-  instruments.forEach((inst,i) => { if(i>0) simulateDynamics(inst); });
-  if (++wc >= 50) {
-    clearInterval(warmup);
-    addLog('Warmup complete · connecting Binance WS','ws');
-    connectBinance();
-    setInterval(uiRefresh, CYCLE_MS);
+function spark(st){
+  const cv=st.cv,cx=st.cx,W=cv.offsetWidth,H=36;
+  if(cv.width!==W)cv.width=W;cv.height=H;
+  const n=st.spC;if(n<2)return;
+  cx.clearRect(0,0,W,H);
+  let mn=Infinity,mx=-Infinity;
+  const v=new Float64Array(n),si=n<80?0:st.spH;
+  for(let j=0;j<n;j++){const x=st.spB[(si+j)%80];v[j]=x;if(x<mn)mn=x;if(x>mx)mx=x}
+  if(mx===mn){mn-=.5;mx+=.5}const rg=mx-mn;
+  if(st.tau!==null){
+    const ty=H-((st.tau-mn)/rg)*H;
+    cx.beginPath();cx.strokeStyle="rgba(245,158,11,.3)";cx.lineWidth=1;cx.setLineDash([3,3]);
+    cx.moveTo(0,ty);cx.lineTo(W,ty);cx.stroke();cx.setLineDash([]);
   }
-}, 16);
+  const col=SC[st.state]||"#4b5563";
+  cx.beginPath();cx.strokeStyle=col;cx.lineWidth=1.3;
+  for(let j=0;j<n;j++){
+    const x=(j/(n-1))*W,y=H-((v[j]-mn)/rg)*H;
+    j===0?cx.moveTo(x,y):cx.lineTo(x,y);
+  }
+  cx.stroke();
+}
+
+function updCard(i,st){
+  const d=D[i];if(!d)return;
+  d.card.className="card s"+st.state;
+  d.bd.className="cbadge b"+st.state;
+  d.bd.textContent=st.state==="LOCKED"?"🔒 LOCKED":st.state;
+  const p=SP[i],dif=p-pp0[i];
+  d.pr.textContent=p>=100?p.toFixed(2):p.toFixed(4);
+  const pt=(dif/Math.max(pp0[i],1e-9))*100;
+  d.ch.textContent=(dif>=0?"+":"")+dif.toFixed(2)+" ("+(dif>=0?"+":"")+pt.toFixed(3)+"%)";
+  d.ch.className="cch "+(dif>=0?"up":"dn");
+  const a=st.aiL;
+  d.ai.textContent=isFinite(a)?a.toFixed(4):"—";
+  d.ai.className="mv "+(a<-2?"ct":a<-1?"wn":a>2?"hi":"ok");
+  d.nb.textContent=isFinite(st.nab)?st.nab.toExponential(2):"—";
+  d.nb.className="mv "+(st.nab<0?"wn":"ok");
+  d.ta.textContent=st.tau!==null?st.tau.toFixed(3):"—";
+  d.ad.textContent=isFinite(st.aiA)?st.aiA.toFixed(4):"—";
+  d.rl.textContent=isFinite(st.rhoLL)?st.rhoLL.toFixed(4):"—";
+  d.rl.className="mv "+(st.rhoLL>.6?"ct":st.rhoLL>.4?"wn":"ok");
+  d.sc.textContent=st.score.toFixed(4);
+  d.sc.className="mv "+(st.score>.5?"ok":st.score>.2?"wn":"lo");
+  d.sf.style.width=(st.score*100).toFixed(1)+"%";
+  d.sf.style.background=st.score>.5?"#22c55e":st.score>.2?"#f59e0b":"#4b5563";
+  d.sn.textContent=st.score.toFixed(2);
+  const ic=st.iffV==="FRIEND"?"fr":st.iffV==="FOE"?"fo":"in";
+  d.iv.className="iv "+ic;d.iv.textContent=st.iffV;
+  spark(st);pp0[i]=p;
+}
+
+// CFR radar
+let rA=0;const rH=[];
+function drawRadar(){
+  const cv=document.getElementById("cc2"),wr=document.getElementById("cw");
+  const sz=wr.offsetWidth;if(!sz)return;
+  cv.width=sz;cv.height=sz;
+  const ctx=cv.getContext("2d"),cx=sz/2,cy=sz/2,r=sz/2-5;
+  ctx.clearRect(0,0,sz,sz);
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle="#060d10";ctx.fill();
+  for(let ri=1;ri<=4;ri++){
+    ctx.beginPath();ctx.arc(cx,cy,r*ri/4,0,Math.PI*2);
+    ctx.strokeStyle="rgba(6,182,212,.1)";ctx.lineWidth=1;ctx.stroke();
+  }
+  ctx.strokeStyle="rgba(6,182,212,.1)";ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cx-r,cy);ctx.lineTo(cx+r,cy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,cy-r);ctx.lineTo(cx,cy+r);ctx.stroke();
+  const st=ST[0];
+  rH.forEach((h,idx)=>{
+    const al=(idx/rH.length)*.14;
+    const ex=cx+r*Math.cos(h-Math.PI/2),ey=cy+r*Math.sin(h-Math.PI/2);
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(ex,ey);
+    ctx.strokeStyle=`rgba(6,182,212,${al})`;ctx.lineWidth=2;ctx.stroke();
+  });
+  const sx=cx+r*Math.cos(rA-Math.PI/2),sy=cy+r*Math.sin(rA-Math.PI/2);
+  const g=ctx.createLinearGradient(cx,cy,sx,sy);
+  g.addColorStop(0,"rgba(6,182,212,0)");g.addColorStop(1,"rgba(6,182,212,.85)");
+  ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(sx,sy);ctx.strokeStyle=g;ctx.lineWidth=2;ctx.stroke();
+  const ca=[0,Math.PI/2,Math.PI,3*Math.PI/2];
+  for(let k=0;k<4;k++){
+    const rk=Math.abs(st.cR[k]||0),dr=r*.85*rk;
+    const dx=cx+dr*Math.cos(ca[k]-Math.PI/2),dy=cy+dr*Math.sin(ca[k]-Math.PI/2);
+    ctx.beginPath();ctx.arc(dx,dy,3,0,Math.PI*2);
+    ctx.fillStyle=rk>.6?"rgba(239,68,68,.9)":rk>.4?"rgba(245,158,11,.8)":"rgba(34,197,94,.7)";ctx.fill();
+  }
+  ctx.beginPath();ctx.arc(cx,cy,4,0,Math.PI*2);ctx.fillStyle="#06b6d4";ctx.fill();
+  if(st.cpd){
+    ctx.beginPath();ctx.arc(cx,cy,r*.65,0,Math.PI*2);
+    ctx.strokeStyle="rgba(239,68,68,.4)";ctx.lineWidth=2;ctx.stroke();
+  }
+  const rl=st.rhoLL||0;
+  ctx.fillStyle="#06b6d4";ctx.font="700 11px 'JetBrains Mono',monospace";ctx.textAlign="center";
+  ctx.fillText("ρ="+rl.toFixed(3),cx,cy+r+16);
+  rA=(rA+.04)%(Math.PI*2);rH.push(rA);if(rH.length>60)rH.shift();
+}
+
+// MSTS bars
+const MF=[0,1,2,3,4,5].map(s=>document.getElementById("m"+s));
+function updMSTS(){
+  const st=ST[0],mx=Math.max(...st.mPSD,1e-10);
+  for(let s=0;s<6;s++){
+    const pct=Math.min(1,st.mPSD[s]/mx)*100,act=st.mPSD[s]>st.mSL;
+    MF[s].style.width=pct.toFixed(1)+"%";
+    MF[s].style.background=act?"#a855f7":"#1e3a5f";
+  }
+}
+
+// AWACS panel & HUD elements
+const AE={
+  rho:document.getElementById("a-rho"),pd:document.getElementById("a-pd"),bt:document.getElementById("a-bt"),
+  mc:document.getElementById("a-mc"),sg:document.getElementById("a-sg"),rs:document.getElementById("a-rs"),
+  iv:document.getElementById("a-iv"),dp:document.getElementById("a-dp"),
+  ar:document.getElementById("a-ar"),aa:document.getElementById("a-aa"),na:document.getElementById("a-na"),
+};
+const HE={
+  src:document.getElementById("h-src"),tau:document.getElementById("h-tau"),
+  rho:document.getElementById("h-rho"),msts:document.getElementById("h-msts"),adm:document.getElementById("h-adm"),
+  tkr:document.getElementById("tkr"),wsl:document.getElementById("ws-lbl"),wsd:document.getElementById("ws-dot"),
+};
+const FSM_ALL=["ACTIVE","PRE_DRIFT","RESONANCE","DRIFT_WARNING","FLASH_COLLAPSE","PHOENIX_STANDBY","RECOVERY","LOCKED"];
+
+function updAWACS(){
+  const st=ST[0];
+  AE.rho.textContent=(st.rhoLL||0).toFixed(4);
+  AE.rho.style.color=st.rhoLL>.6?"#ef4444":st.rhoLL>.4?"#f59e0b":"#22c55e";
+  AE.pd.textContent=st.cpd?"YES ▲":"NO";AE.pd.style.color=st.cpd?"#ef4444":"#4b5563";
+  AE.bt.textContent=st.tIB+"/26";
+  let cnt=0;for(let s=0;s<6;s++)if(st.mPSD[s]>st.mSL)cnt++;
+  AE.mc.textContent=cnt+"/6";AE.mc.style.color=cnt>=3?"#a855f7":cnt>=1?"#f59e0b":"#4b5563";
+  AE.sg.textContent=st.mSL.toExponential(2);
+  const ro=st.state==="RESONANCE";AE.rs.textContent=ro?"ACTIVE ⚡":"OFF";AE.rs.style.color=ro?"#a855f7":"#4b5563";
+  const ic=st.iffV==="FRIEND"?"fr":st.iffV==="FOE"?"fo":"in";
+  AE.iv.className="ivt "+ic;AE.iv.textContent=st.iffV;
+  AE.dp.textContent=(st.damp||1).toFixed(3);
+  AE.ar.textContent=isFinite(st.aiL)?st.aiL.toFixed(4):"—";
+  AE.aa.textContent=isFinite(st.aiA)?st.aiA.toFixed(4):"—";
+  AE.na.textContent=isFinite(st.nab)?st.nab.toExponential(2):"—";
+}
+function updHUD(){
+  const st=ST[0];
+  HE.tau.textContent=st.tau!==null?st.tau.toFixed(4):"—";
+  HE.tau.className="sv"+(st.tau!==null?" hot":"");
+  HE.rho.textContent=(st.rhoLL||0).toFixed(4);
+  HE.rho.className="sv"+(st.rhoLL>.6?" crit":st.rhoLL>.4?" warn":"");
+  let cnt=0;for(let s=0;s<6;s++)if(st.mPSD[s]>st.mSL)cnt++;
+  HE.msts.textContent=cnt+"/6";HE.msts.className="sv"+(cnt>=3?" hot":"");
+  HE.adm.textContent=st.score>0?(st.score*100).toFixed(0)+"%":"BLOCKED";
+  HE.adm.className="sv"+(st.score>.5?" live":st.score>0?" warn":" crit");
+  FSM_ALL.forEach(s=>{
+    const el=document.getElementById("f"+s);if(!el)return;
+    st.state===s?el.classList.add("fa"):el.classList.remove("fa");
+  });
+}
+
+// Binance WS
+let wsR=1000,wsT=null,ws=null,tkC=0,gT=0;
+function wsConn(){
+  ws=new WebSocket("wss://stream.binance.com:9443/stream?streams=btcusdt@aggTrade/ethusdt@aggTrade/solusdt@aggTrade");
+  ws.onopen=()=>{
+    isLive=true;wsR=1000;
+    HE.wsd.className="live";HE.wsl.textContent="LIVE";
+    HE.src.textContent="BINANCE_WS";HE.src.className="sv live";
+  };
+  ws.onmessage=(e)=>{
+    let msg;try{msg=JSON.parse(e.data)}catch{return}
+    const d=msg.data;if(!d||d.e!=="aggTrade")return;
+    const idx=SI[d.s];if(idx===undefined)return;
+    const p=parseFloat(d.p),q=parseFloat(d.q);
+    if(!isFinite(p)||p<=0||!isFinite(q))return;
+    SP[idx]=p;SV[idx]=q;
+    tick(ST[idx],p,q,gT);lastAI[idx]=ST[idx].aiL;
+    gT++;tkC++;
+  };
+  ws.onerror=()=>{};
+  ws.onclose=()=>{
+    isLive=false;HE.wsd.className="err";HE.wsl.textContent="RETRY";
+    HE.src.textContent="SIM";HE.src.className="sv warn";
+    clearTimeout(wsT);wsT=setTimeout(()=>{wsR=Math.min(wsR*2,30000);wsConn()},wsR);
+  };
+}
+
+// RAF
+function simF(){
+  for(let t=0;t<8;t++){
+    INST.forEach((ins,i)=>{
+      let sk=1;const r=Math.random();
+      if(r<.003)sk=15+Math.random()*30;else if(r<.025)sk=3+Math.random()*5;
+      SP[i]+=randn()*(ins.s*3e-4)*sk;SP[i]=Math.max(SP[i],ins.s*.1);
+      SV[i]=Math.abs(1.5+randn()*.5);
+      tick(ST[i],SP[i],SV[i],gT);gT++;
+    });
+  }
+}
+function raf(){
+  if(!isLive)simF();
+  INST.forEach((_,i)=>updCard(i,ST[i]));
+  drawRadar();updMSTS();updAWACS();updHUD();
+  requestAnimationFrame(raf);
+}
+
+setInterval(()=>{HE.tkr.textContent=tkC+" tk/s";tkC=0},1000);
+
+// Boot
+build();cache();
+for(let t=0;t<150;t++){
+  INST.forEach((ins,i)=>{
+    SP[i]+=randn()*ins.s*3e-4;SP[i]=Math.max(SP[i],ins.s*.1);
+    tick(ST[i],SP[i],1.5,t);
+  });
+}
+gT=150;wsConn();requestAnimationFrame(raf);
 </script>
 </body>
 </html>
