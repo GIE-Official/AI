@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GIE-Soliton V2.5 "AWACS" — The Ma-Chao Equation Gateway</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow+Condensed:wght@300;400;600;700&family=Barlow:wght@300;400&display=swap');
+
+/* ── CSS Variables ── */
+:root {
+  --bg:            #080c10;
+  --bg2:           #0d1117;
+  --bg3:           #111820;
+  --border:        #1e2d3d;
+  --border2:       #243444;
+  --text:          #c9d8e8;
+  --text-dim:      #5a7a94;
+  --text-bright:   #e8f4ff;
+  --mono:          'Share Tech Mono', monospace;
+  --sans:          'Barlow Condensed', sans-serif;
+  --sans2:         'Barlow', sans-serif;
+
+  /* FSM state palette */
+  --c-active:      #00c87a;
+  --c-predrift:    #f5a623;
+  --c-resonance:   #9b59f5;
+  --c-drift:       #ff8c42;
+  --c-collapse:    #e8003d;
+  --c-standby:     #5a7a94;
+  --c-recovery:    #00b3cc;
+  --c-locked:      #cc0022;
+
+  /* AWACS accent */
+  --acc-cfr:       #00d4ff;
+  --acc-msts:      #9b59f5;
+  --acc-iff:       #00c87a;
+  --acc-lat:       #f5a623;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans2);
+  font-size: 13px;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Scanline overlay ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent, transparent 2px,
+    rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ══════════════════════════════════════════
+   TOP BANNER
+══════════════════════════════════════════ */
+.top-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px;
+  background: linear-gradient(90deg, #0a1520 0%, #0d1a2a 100%);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+
+.banner-id {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+.banner-id span { color: var(--acc-cfr); }
+
+.banner-title {
+  font-family: var(--sans);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--text-bright);
+  text-transform: uppercase;
+}
+.banner-title em { color: var(--c-active); font-style: normal; }
+
+.banner-params {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  text-align: right;
+  line-height: 1.7;
+}
+.banner-params span { color: var(--acc-lat); }
+
+/* ══════════════════════════════════════════
+   HUD STRIP  — 4 AWACS metrics
+══════════════════════════════════════════ */
+.hud-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.hud-cell {
+  background: var(--bg2);
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+  overflow: hidden;
+}
+.hud-cell::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+}
+.hud-cell.cfr::before    { background: var(--acc-cfr); }
+.hud-cell.msts::before   { background: var(--acc-msts); }
+.hud-cell.iff::before    { background: var(--acc-iff); }
+.hud-cell.latency::before{ background: var(--acc-lat); }
+
+.hud-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  text-transform: uppercase;
+}
+.hud-value {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--text-bright);
+}
+.hud-sub {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.hud-cell.cfr   .hud-value { color: var(--acc-cfr); }
+.hud-cell.msts  .hud-value { color: var(--acc-msts); }
+.hud-cell.iff   .hud-value { color: var(--acc-iff); }
+.hud-cell.latency .hud-value { color: var(--acc-lat); }
+
+/* IFF verdict colours */
+.iff-neutral { color: var(--text-dim) !important; }
+.iff-friend  { color: var(--c-active) !important; }
+.iff-foe     { color: var(--c-collapse) !important; }
+
+/* ══════════════════════════════════════════
+   FSM STRIP
+══════════════════════════════════════════ */
+.fsm-strip {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 20px;
+  height: 34px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.fsm-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  margin-right: 12px;
+  white-space: nowrap;
+}
+
+.fsm-node {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  cursor: default;
+  transition: all 0.25s;
+  position: relative;
+  white-space: nowrap;
+}
+.fsm-node .dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.fsm-node .name {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  transition: color 0.25s;
+}
+
+/* Active state highlight */
+.fsm-node.active-state .name { font-weight: 700; }
+.fsm-node.active-state { background: rgba(255,255,255,0.04); }
+
+.fsm-arrow { color: var(--border2); font-size: 10px; padding: 0 3px; }
+
+/* ══════════════════════════════════════════
+   MAIN GRID
+══════════════════════════════════════════ */
+.main-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  padding: 1px;
+  min-height: calc(100vh - 160px);
+}
+
+/* ══════════════════════════════════════════
+   TACTICAL CARD
+══════════════════════════════════════════ */
+.tcard {
+  background: var(--bg2);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  min-height: 320px;
+}
+
+/* Left border = state colour */
+.tcard::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--card-state-color, var(--c-standby));
+  transition: background 0.4s;
+}
+
+/* Card header */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.card-symbol {
+  font-family: var(--sans);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-bright);
+}
+.card-exchange {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.card-iff-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  transition: all 0.3s;
+}
+.badge-neutral { color: var(--text-dim); border-color: var(--text-dim); }
+.badge-fnd     { color: var(--c-active); border-color: var(--c-active); }
+.badge-foe     { color: var(--c-collapse); border-color: var(--c-collapse);
+                 background: rgba(204,0,34,0.12); }
+
+/* Metrics row */
+.metrics-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.metric-cell {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  padding: 6px 8px;
+  border-radius: 2px;
+}
+.metric-lbl {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+.metric-val {
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--text-bright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* AI toggle */
+.ai-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.toggle-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  letter-spacing: 0.06em;
+}
+.toggle-btn {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.toggle-opt {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 3px 8px;
+  cursor: pointer;
+  background: var(--bg3);
+  color: var(--text-dim);
+  border: none;
+  transition: all 0.2s;
+  letter-spacing: 0.04em;
+}
+.toggle-opt.active {
+  background: var(--border2);
+  color: var(--text-bright);
+}
+
+/* ∇AI gradient arrow */
+.nabla-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+}
+.nabla-label { color: var(--text-dim); }
+.nabla-arrow {
+  font-size: 15px;
+  transition: all 0.3s;
+}
+.nabla-val { color: var(--text-bright); }
+.nabla-pos { color: var(--c-active); }
+.nabla-neg { color: var(--c-collapse); }
+.nabla-zero{ color: var(--text-dim); }
+
+/* Sparkline */
+.sparkline-wrap {
+  position: relative;
+  height: 44px;
+}
+canvas.sparkline {
+  width: 100%;
+  height: 44px;
+  display: block;
+}
+
+/* MSTS energy matrix */
+.msts-matrix {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+.msts-matrix-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text-dim);
+  margin-right: 2px;
+  white-space: nowrap;
+}
+.msts-scale-block {
+  flex: 1;
+  height: 14px;
+  border-radius: 1px;
+  border: 1px solid rgba(255,255,255,0.08);
+  transition: background 0.4s, border-color 0.4s;
+  position: relative;
+  cursor: default;
+}
+.msts-scale-block::after {
+  content: attr(data-scale);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 7px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  pointer-events: none;
+  margin-bottom: 2px;
+}
+
+/* Score bar */
+.score-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.score-label { font-family: var(--mono); font-size: 9px; color: var(--text-dim); }
+.score-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.score-bar-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.3s, background 0.3s;
+}
+.score-num {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-bright);
+  width: 36px;
+  text-align: right;
+}
+
+/* State badge */
+.state-badge {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  padding: 4px 8px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  text-align: center;
+  text-transform: uppercase;
+  transition: all 0.35s;
+}
+
+/* ══════════════════════════════════════════
+   FFI INDEX MAP PANEL
+══════════════════════════════════════════ */
+.ffi-panel {
+  grid-column: 1 / -1;
+  background: var(--bg2);
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
+.ffi-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+.ffi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+.ffi-seg {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 6px 8px;
+}
+.ffi-range {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--acc-cfr);
+  margin-bottom: 2px;
+}
+.ffi-name {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+.ffi-dim {
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.ffi-bar {
+  height: 3px;
+  background: var(--border2);
+  border-radius: 1px;
+  margin-top: 5px;
+  overflow: hidden;
+}
+.ffi-bar-fill {
+  height: 100%;
+  border-radius: 1px;
+  transition: width 0.5s;
+}
+
+/* ══════════════════════════════════════════
+   FOOTER
+══════════════════════════════════════════ */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg3);
+}
+.footer-left {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+.footer-right {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.pill {
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 3px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  transition: all 0.3s;
+}
+.pill.live { border-color: var(--c-active); color: var(--c-active); animation: pulse-border 2s infinite; }
+
+/* ══════════════════════════════════════════
+   ANIMATIONS
+══════════════════════════════════════════ */
+@keyframes pulse-border {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,200,122,0.3); }
+  50%      { box-shadow: 0 0 0 4px rgba(0,200,122,0); }
+}
+
+@keyframes blink-amber {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.35; }
+}
+@keyframes pulse-purple {
+  0%,100% { opacity: 1; text-shadow: 0 0 6px var(--c-resonance); }
+  50%      { opacity: 0.6; text-shadow: 0 0 2px var(--c-resonance); }
+}
+@keyframes breathe-gray {
+  0%,100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+@keyframes blink-red {
+  0%,100% { opacity: 1; }
+  40%      { opacity: 0.2; }
+}
+
+.anim-predrift   { animation: blink-amber  1.4s ease-in-out infinite; }
+.anim-resonance  { animation: pulse-purple 0.7s ease-in-out infinite; }
+.anim-standby    { animation: breathe-gray 2.2s ease-in-out infinite; }
+.anim-collapse   { animation: blink-red    0.5s linear infinite; }
+.anim-locked     { animation: blink-red    0.9s ease-in-out infinite; }
+
+/* ══════════════════════════════════════════
+   TOOLTIP
+══════════════════════════════════════════ */
+[data-tip] {
+  position: relative;
+  cursor: help;
+}
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 5px);
+  left: 50%; transform: translateX(-50%);
+  background: #1a2535;
+  border: 1px solid var(--border2);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 9px;
+  padding: 4px 8px;
+  border-radius: 2px;
+  white-space: nowrap;
+  z-index: 200;
+  pointer-events: none;
+}
+
+/* ── MSTS full tensor mini-viz ── */
+.tensor-viz {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(4, 4px);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.tensor-cell {
+  background: var(--bg3);
+  transition: background 0.4s;
+}
+
+/* ══════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════ */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Banner ── -->
+<div class="top-banner">
+  <div class="banner-id">SYS_IDENT: <span>GIE-SOLITON-V2.5-AWACS</span> · BUILD 2026-03</div>
+  <div class="banner-title">GIE-<em>Soliton</em> V2.5 · AWACS Sensing Array</div>
+  <div class="banner-params">
+    τ=<span>0.01</span> · δ=<span>15.0 USD</span> · horizon=<span>500 ticks</span><br>
+    W=100 · ε=1e-9 · ORCID: 0009-0004-2456-9098
+  </div>
+</div>
+
+<!-- ── HUD Strip ── -->
+<div class="hud-strip">
+  <div class="hud-cell cfr" data-tip="Weighted mean |ρ_k| across 4 auxiliary manifolds (Welford online)">
+    <div class="hud-label">CFR_SYNC · ρ_LL</div>
+    <div class="hud-value" id="hud-rho">—</div>
+    <div class="hud-sub" id="hud-rho-sub">4-channel · PRE_DRIFT threshold: 0.60</div>
+  </div>
+  <div class="hud-cell msts" data-tip="Active scale count above adaptive σ_limit (N_SCALES = 6)">
+    <div class="hud-label">MSTS_RESONANCE</div>
+    <div class="hud-value" id="hud-msts">— / 6</div>
+    <div class="hud-sub" id="hud-msts-sub">W = {8, 16, 26, 40, 60, 100} · RESONANCE_K = 3</div>
+  </div>
+  <div class="hud-cell iff" data-tip="Global IFF verdict: NEUTRAL / FRIEND (Execution Damping) / FOE (Phoenix Standby)">
+    <div class="hud-label">IFF_STATUS</div>
+    <div class="hud-value iff-neutral" id="hud-iff">NEUTRAL</div>
+    <div class="hud-sub" id="hud-iff-sub">damping factor: 1.000</div>
+  </div>
+  <div class="hud-cell latency" data-tip="CPython 3.12 scalar hot-path latency per 26-tick batch. Target: < 0.035ms (Cython)">
+    <div class="hud-label">SYS_LATENCY · ms/26T</div>
+    <div class="hud-value" id="hud-lat">—</div>
+    <div class="hud-sub">CPython target &lt; 0.40ms · Cython: &lt; 0.035ms</div>
+  </div>
+</div>
+
+<!-- ── FSM Strip ── -->
+<div class="fsm-strip">
+  <div class="fsm-label">FSM STATE →</div>
+  <div class="fsm-node" id="fsm-ACTIVE">
+    <div class="dot" style="background:var(--c-active)"></div>
+    <div class="name">ACTIVE</div>
+  </div>
+  <div class="fsm-arrow">›</div>
+  <div class="fsm-node" id="fsm-PRE_DRIFT">
+    <div class="dot" style="background:var(--c-predrift)"></div>
+    <div class="name">PRE_DRIFT</div>
+  </div>
+  <div class="fsm-arrow">›</div>
+  <div class="fsm-node" id="fsm-RESONANCE">
+    <div class="dot" style="background:var(--c-resonance)"></div>
+    <div class="name">RESONANCE</div>
+  </div>
+  <div class="fsm-arrow">›</div>
+  <div class="fsm-node" id="fsm-DRIFT_WARNING">
+    <div class="dot" style="background:var(--c-drift)"></div>
+    <div class="name">DRIFT_WARNING</div>
+  </div>
+  <div class="fsm-arrow">›</div>
+  <div class="fsm-node" id="fsm-FLASH_COLLAPSE">
+    <div class="dot" style="background:var(--c-collapse)"></div>
+    <div class="name">FLASH_COLLAPSE</div>
+  </div>
+  <div class="fsm-arrow">›</div>
+  <div class="fsm-node" id="fsm-PHOENIX_STANDBY">
+    <div class="dot" style="background:var(--c-standby)"></div>
+    <div class="name">PHOENIX_STANDBY</div>
+  </div>
+  <div class="fsm-arrow">›</div>
+  <div class="fsm-node" id="fsm-RECOVERY">
+    <div class="dot" style="background:var(--c-recovery)"></div>
+    <div class="name">RECOVERY</div>
+  </div>
+  <div class="fsm-arrow">›</div>
+  <div class="fsm-node" id="fsm-LOCKED">
+    <div class="dot" style="background:var(--c-locked)"></div>
+    <div class="name">LOCKED 🔒</div>
+  </div>
+</div>
+
+<!-- ── Main Card Grid ── -->
+<div class="main-grid" id="card-grid">
+  <!-- Injected by JS -->
+</div>
+
+<!-- ── FFI Index Map ── -->
+<div class="ffi-panel">
+  <div class="ffi-title">FFI UNIFIED INDEX MAP · 289-DIM · ALL READ ACCESS LOCKED TO DEFINED OFFSETS</div>
+  <div class="ffi-grid">
+    <div class="ffi-seg">
+      <div class="ffi-range">[0 … 59]</div>
+      <div class="ffi-name">AI_GRID</div>
+      <div class="ffi-dim">10 price levels × 6 windows · log₁₀(AI) matrix</div>
+      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b0" style="width:20%;background:var(--acc-cfr)"></div></div>
+    </div>
+    <div class="ffi-seg">
+      <div class="ffi-range">[60 … 251]</div>
+      <div class="ffi-name">MSTS_TENSOR</div>
+      <div class="ffi-dim">32 time-depth × 6 scales · PSD power spectrum</div>
+      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b1" style="width:35%;background:var(--acc-msts)"></div></div>
+    </div>
+    <div class="ffi-seg">
+      <div class="ffi-range">[252 … 255]</div>
+      <div class="ffi-name">CFR_RHO</div>
+      <div class="ffi-dim">4 aux stream ρ_k values · Welford bivariate</div>
+      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b2" style="width:50%;background:var(--acc-cfr)"></div></div>
+    </div>
+    <div class="ffi-seg">
+      <div class="ffi-range">[256 … 257]</div>
+      <div class="ffi-name">IFF_FEAT</div>
+      <div class="ffi-dim">AI_raw_log · AI_adjusted_log (impact-stripped)</div>
+      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b3" style="width:65%;background:var(--acc-iff)"></div></div>
+    </div>
+    <div class="ffi-seg">
+      <div class="ffi-range">[258 … 287]</div>
+      <div class="ffi-name">GRAD_FIELD</div>
+      <div class="ffi-dim">30-channel ∇AI pressure gradient field</div>
+      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b4" style="width:80%;background:var(--acc-lat)"></div></div>
+    </div>
+    <div class="ffi-seg">
+      <div class="ffi-range">[288]</div>
+      <div class="ffi-name">FSM_STATUS</div>
+      <div class="ffi-dim">8-state bit mask · V2.5 extended FSM</div>
+      <div class="ffi-bar"><div class="ffi-bar-fill" id="ffi-b5" style="width:100%;background:var(--c-active)"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<div class="footer">
+  <div class="footer-left">
+    Ma, C. (2026). The Ma-Chao Equation: Non-Hermitian Geometry and Topological Phase Transitions in Information-Fluid Hydrodynamics.<br>
+    ORCID: 0009-0004-2456-9098 · GIE-Official/AI · All read paths locked to FFI §5 offset spec.
+  </div>
+  <div class="footer-right">
+    <span class="pill">τ=0.01</span>
+    <span class="pill">δ=15 USD</span>
+    <span class="pill">W=100</span>
+    <span class="pill">horizon=500</span>
+    <span class="pill live" id="sim-pill">SIM ●</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     JAVASCRIPT ENGINE
+═══════════════════════════════════════════════════════ -->
+<script>
+"use strict";
+// ═══════════════════════════════
+// CALIBRATED CONSTANTS (0805 alignment — DO NOT MODIFY)
+// ═══════════════════════════════
+const CFG = {
+  TAU_PERCENTILE:    0.01,
+  HORIZON:           500,
+  DELTA_NOISE_FLOOR: 15.0,
+  AI_WINDOW:         100,
+  EPSILON:           1e-9,
+  CFR_THRESHOLD:     0.60,
+  MSTS_SIGMA_MULT:   2.5,
+  RESONANCE_K:       3,
+  NABLA_COLLAPSE:   -0.05,
+  RECOVERY_TICKS:    20,
+  PSI_SINGULAR:      500.0,
+  N_SCALES:          6,
+  SCALES:            [8, 16, 26, 40, 60, 100],
+  MAX_WINDOW:        100,
+  T_DEPTH:           32,
+};
+
+// FFI index mapping (V2.5 spec §5 — READ-ONLY)
+const FFI = Object.freeze({
+  AI_GRID_START:     0,    AI_GRID_END:     59,
+  MSTS_START:        60,   MSTS_END:        251,
+  CFR_START:         252,  CFR_END:         255,
+  IFF_START:         256,  IFF_END:         257,
+  GRAD_START:        258,  GRAD_END:        287,
+  FSM_STATUS:        288,
+  TOTAL_DIM:         289,
+});
+
+// Instruments on screen
+const INSTRUMENTS = [
+  { id: "BTC-USDT", exchange: "BINANCE SPOT",   priceSeed: 60000, volSeed: 1.8 },
+  { id: "ETH-USDT", exchange: "BINANCE FUTURES", priceSeed: 3100,  volSeed: 2.1 },
+  { id: "SOL-USDT", exchange: "BINANCE SPOT",   priceSeed: 170,   volSeed: 2.5 },
+];
+
+// FSM state → CSS variable
+const STATE_COLOR = {
+  ACTIVE:          "var(--c-active)",
+  PRE_DRIFT:       "var(--c-predrift)",
+  RESONANCE:       "var(--c-resonance)",
+  DRIFT_WARNING:   "var(--c-drift)",
+  FLASH_COLLAPSE:  "var(--c-collapse)",
+  PHOENIX_STANDBY: "var(--c-standby)",
+  RECOVERY:        "var(--c-recovery)",
+  LOCKED:          "var(--c-locked)",
+};
+const STATE_ANIM = {
+  ACTIVE:          "",
+  PRE_DRIFT:       "anim-predrift",
+  RESONANCE:       "anim-resonance",
+  DRIFT_WARNING:   "",
+  FLASH_COLLAPSE:  "anim-collapse",
+  PHOENIX_STANDBY: "anim-standby",
+  RECOVERY:        "",
+  LOCKED:          "anim-locked",
+};
+
+// ═══════════════════════════════
+// WELFORD ONLINE (zero allocation: update in-place on plain object)
+// ═══════════════════════════════
+function welfordCreate() { return { n: 0, mean: 0, M2: 0 }; }
+function welfordUpdate(w, x) {
+  // NO new objects allocated — pure mutation
+  w.n++;
+  const d = x - w.mean;
+  w.mean += d / w.n;
+  w.M2   += d * (x - w.mean);
+}
+function welfordStd(w) {
+  return w.n > 1 ? Math.sqrt(w.M2 / (w.n - 1)) : 0;
+}
+
+// ═══════════════════════════════
+// PER-INSTRUMENT STATE  (pre-allocated, no new objects in hot path)
+// ═══════════════════════════════
+function createInstrumentState(seed) {
+  const maxHist = 200;
+  return {
+    price:          seed,
+    prevPrice:      seed,
+    prevPrevPrice:  seed,
+    cumVol:         0,
+    aiLog:          0,
+    aiAdj:          0,
+    nabla:          0,
+    tau:            null,
+    score:          0,
+    state:          "PHOENIX_STANDBY",
+    rhoLL:          0,
+    iffVerdict:     "NEUTRAL",
+    dampingFactor:  1,
+    mstsPSD:        new Float64Array(6),   // pre-allocated
+    mstsEnergy:     new Float64Array(6),   // rolling energy E[s]
+    psiSqBuf:       new Float64Array(100), // Ψ² circular buffer
+    psiHead:        0,
+    psiCount:       0,
+    mstsSigmaLimit: 1,
+    mstsSigmaWel:   welfordCreate(),
+    aiLogSorted:    [],                    // bisect-maintained (JS array, pre-grown)
+    aiLogHistory:   new Float64Array(500), // ring buffer for sorted maintenance
+    aiHistHead:     0,
+    aiHistCount:    0,
+    welAI:          welfordCreate(),
+    tickCount:      0,
+    tickInBatch:    0,
+    // Sparkline history (ring buffer, 80 points)
+    sparkBuf:       new Float64Array(80),
+    sparkHead:      0,
+    sparkCount:     0,
+    // Price ring for Ψ
+    priceRing:      new Float64Array(3),
+    priceHead:      0,
+    priceCount:     0,
+    // CFR bivariate Welford: 4 channels × 6 fields
+    cfrBiv:         new Float64Array(24),
+    cfrRho:         new Float64Array(4),
+    cfrLastUpd:     new Int32Array(4).fill(-999),
+    cfrPrevAux:     new Float64Array(4),
+    cfrPrevPrimary: 0,
+    // Nabla history
+    lastAiLog:      0,
+    prevNabla:      0,
+    // AI_adj fields
+    volSelfSum:     0,
+    // Score history
+    scoreHistory:   new Float64Array(80),
+    scoreHead:      0,
+    // Display toggle: "raw" | "adj"
+    aiDisplayMode:  "raw",
+    // Sparkline canvas ref (filled after DOM render)
+    sparkCanvas:    null,
+    sparkCtx:       null,
+    scoreCanvas:    null,
+    scoreCtx:       null,
+    // Tensor snapshot (last T_DEPTH × N_SCALES stored in msts already)
+    tensorBuf:      new Float64Array(CFG.T_DEPTH * CFG.N_SCALES),
+    tensorHead:     0,
+  };
+}
+
+// Global state array
+const instStates = INSTRUMENTS.map(inst => createInstrumentState(inst.priceSeed));
+
+// Global HUD Welford (pre-allocated, never recreated)
+const hudWelLat = welfordCreate();
+
+// ═══════════════════════════════
+// BISECT HELPERS  (pure functions, zero allocation for primitives)
+// ═══════════════════════════════
+function bisectLeft(arr, val) {
+  let lo = 0, hi = arr.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (arr[mid] < val) lo = mid + 1; else hi = mid;
+  }
+  return lo;
+}
+function bisectInsort(arr, val) {
+  const i = bisectLeft(arr, val);
+  arr.splice(i, 0, val);   // O(n) — acceptable for JS demonstration
+}
+
+// ═══════════════════════════════
+// MSTS: compute PSD for one tick  (unrolled, zero allocation)
+// ═══════════════════════════════
+function mstsTick(st, price) {
+  const ring = st.priceRing;
+  const h    = (st.priceHead + 1) % 3;
+  ring[h]    = price;
+  st.priceHead = h;
+  if (st.priceCount < 3) { st.priceCount++; }
+
+  let psiT = 0, psiSq = 0;
+  if (st.priceCount >= 3) {
+    const p0 = ring[h];
+    const p1 = ring[(h + 2) % 3];   // t-1
+    const p2 = ring[(h + 1) % 3];   // t-2
+    psiT  = p0 - 2 * p1 + p2;
+    psiSq = psiT * psiT;
+  }
+
+  const newHead = (st.psiHead + 1) % CFG.MAX_WINDOW;
+  st.psiSqBuf[newHead] = psiSq;
+  st.psiHead  = newHead;
+  if (st.psiCount < CFG.MAX_WINDOW) st.psiCount++;
+  const cnt = st.psiCount;
+  const buf = st.psiSqBuf;
+
+  // Unrolled 6-scale energy update
+  let e0=st.mstsEnergy[0]+psiSq, e1=st.mstsEnergy[1]+psiSq,
+      e2=st.mstsEnergy[2]+psiSq, e3=st.mstsEnergy[3]+psiSq,
+      e4=st.mstsEnergy[4]+psiSq, e5=st.mstsEnergy[5]+psiSq;
+  if (cnt >   8) e0 -= buf[(newHead -   8 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
+  if (cnt >  16) e1 -= buf[(newHead -  16 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
+  if (cnt >  26) e2 -= buf[(newHead -  26 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
+  if (cnt >  40) e3 -= buf[(newHead -  40 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
+  if (cnt >  60) e4 -= buf[(newHead -  60 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
+  if (cnt > 100) e5 -= buf[(newHead - 100 + CFG.MAX_WINDOW) % CFG.MAX_WINDOW];
+  if (e0<0) e0=0; if (e1<0) e1=0; if (e2<0) e2=0;
+  if (e3<0) e3=0; if (e4<0) e4=0; if (e5<0) e5=0;
+  st.mstsEnergy[0]=e0; st.mstsEnergy[1]=e1; st.mstsEnergy[2]=e2;
+  st.mstsEnergy[3]=e3; st.mstsEnergy[4]=e4; st.mstsEnergy[5]=e5;
+
+  const psd0=e0/8, psd1=e1/16, psd2=e2/26, psd3=e3/40, psd4=e4/60, psd5=e5/100;
+  st.mstsPSD[0]=psd0; st.mstsPSD[1]=psd1; st.mstsPSD[2]=psd2;
+  st.mstsPSD[3]=psd3; st.mstsPSD[4]=psd4; st.mstsPSD[5]=psd5;
+
+  // Write to tensor (FFI [60..251])
+  const tBase = st.tensorHead * CFG.N_SCALES;
+  st.tensorBuf[tBase]=psd0; st.tensorBuf[tBase+1]=psd1; st.tensorBuf[tBase+2]=psd2;
+  st.tensorBuf[tBase+3]=psd3; st.tensorBuf[tBase+4]=psd4; st.tensorBuf[tBase+5]=psd5;
+  st.tensorHead = (st.tensorHead + 1) % CFG.T_DEPTH;
+
+  // Welford on mean PSD for adaptive σ_limit
+  const mPSD = (psd0+psd1+psd2+psd3+psd4+psd5) / 6;
+  welfordUpdate(st.mstsSigmaWel, mPSD);
+  if (st.mstsSigmaWel.n >= 20) {
+    st.mstsSigmaLimit = st.mstsSigmaWel.mean + CFG.MSTS_SIGMA_MULT * welfordStd(st.mstsSigmaWel);
+  }
+
+  let activeCnt = 0;
+  const sl = st.mstsSigmaLimit;
+  if(psd0>sl)activeCnt++; if(psd1>sl)activeCnt++; if(psd2>sl)activeCnt++;
+  if(psd3>sl)activeCnt++; if(psd4>sl)activeCnt++; if(psd5>sl)activeCnt++;
+  return { resonance: activeCnt >= CFG.RESONANCE_K, activeCnt, psiT };
+}
+
+// ═══════════════════════════════
+// CFR: bivariate Welford (deferred sqrt at batch end)
+// ═══════════════════════════════
+function cfrTick(st, primaryAiLog, auxAiLogs, tick, isBatchEnd) {
+  const biv = st.cfrBiv;
+  const rho = st.cfrRho;
+  const n_aux = 4;
+  const stale = 2;
+
+  for (let k = 0; k < n_aux; k++) {
+    const age = tick - st.cfrLastUpd[k];
+    let y;
+    if (k < auxAiLogs.length) {
+      st.cfrLastUpd[k] = tick;
+      y = auxAiLogs[k];
+    } else {
+      if (age > stale) continue;
+      y = st.cfrPrevAux[k];
+    }
+    if (tick - st.cfrLastUpd[k] > stale) continue;
+
+    const b = k * 6;
+    const nNew = biv[b] + 1;
+    biv[b] = nNew;
+    const dx = primaryAiLog - biv[b+1];
+    const dy = y - biv[b+2];
+    const invN = 1 / nNew;
+    biv[b+1] += dx * invN;
+    biv[b+2] += dy * invN;
+    const dx2 = primaryAiLog - biv[b+1];
+    const dy2 = y - biv[b+2];
+    biv[b+3] += dx * dx2;
+    biv[b+4] += dy * dy2;
+    biv[b+5] += dx * dy2;
+    st.cfrPrevAux[k] = y;
+  }
+  st.cfrPrevPrimary = primaryAiLog;
+
+  if (!isBatchEnd) return st.rhoLL || 0;
+
+  // Deferred sqrt — only at 26th tick (CFR spec: deferred sqrt)
+  let rhoSum = 0, wSum = 0, leadingK = -1;
+  for (let k = 0; k < n_aux; k++) {
+    const age = tick - st.cfrLastUpd[k];
+    if (age > stale) { rho[k] = 0; continue; }
+    const b = k * 6;
+    const nk = biv[b];
+    if (nk < 30) continue;
+    const denom = biv[b+3] * biv[b+4];
+    let rk = 0;
+    if (denom > 1e-14) {
+      rk = biv[b+5] / Math.sqrt(denom);
+      if (rk >  1) rk =  1;
+      if (rk < -1) rk = -1;
+    }
+    rho[k] = rk;
+    rhoSum += Math.abs(rk);
+    wSum   += 1;
+    const auxDecl   = st.cfrPrevAux[k] < biv[b+2] - 0.02;
+    const primStable = primaryAiLog >= st.cfrPrevPrimary - 0.01;
+    if (rk > CFG.CFR_THRESHOLD && auxDecl && primStable && leadingK < 0) leadingK = k;
+  }
+  const rhoLL = wSum > 0 ? rhoSum / wSum : 0;
+  st.rhoLL = rhoLL;
+  st.cfrPreDrift = (leadingK >= 0) && (rhoLL > CFG.CFR_THRESHOLD);
+  return rhoLL;
+}
+
+// ═══════════════════════════════
+// IFF: O(1) rolling vol self strip
+// ═══════════════════════════════
+function iffTick(st, cumVol, deltaP, volSelf, aiRawLog) {
+  const iSelf  = 1e-5 * volSelf;
+  const mAdj   = Math.max(cumVol - volSelf * 0.1, CFG.EPSILON);
+  const dpAdj  = Math.abs(deltaP - iSelf);
+  const aiAdj  = mAdj / (dpAdj + CFG.EPSILON);
+  const aiAdjLog = Math.log10(Math.max(aiAdj, CFG.EPSILON));
+  st.aiAdj = aiAdjLog;
+
+  const THR = -3.0;
+  const rawColl = aiRawLog < THR;
+  const adjColl = aiAdjLog < THR;
+  const margin  = aiAdjLog - aiRawLog;
+
+  let verdict = "NEUTRAL";
+  if (rawColl && !adjColl && margin >= 0.5) verdict = "FRIEND";
+  else if (rawColl && adjColl)              verdict = "FOE";
+  const volFrac = volSelf / Math.max(cumVol, CFG.EPSILON);
+  const damp    = verdict === "FRIEND" ? Math.max(0, 1 - volFrac * 2.5) : 1;
+  return { verdict, damp, aiAdjLog };
+}
+
+// ═══════════════════════════════
+// MAIN PHYSICS TICK  (called every simulated tick)
+// ═══════════════════════════════
+function physicsTick(st, price, vol, tick) {
+  const isBatchEnd = (st.tickInBatch === 25);
+  st.tickInBatch = (st.tickInBatch + 1) % 26;
+  st.tickCount++;
+
+  // ── Price ring → Ψ (via MSTS) ──────────────────────────────────────────
+  const mstsResult = mstsTick(st, price);
+
+  // ── AI_log ─────────────────────────────────────────────────────────────
+  // Rolling window: push price, maintain cumVol, compute ΔP
+  const W = CFG.AI_WINDOW;
+  st.cumVol = Math.max(st.cumVol * 0.98 + vol, CFG.EPSILON);   // exponential decay approx
+  const deltaP = Math.abs(price - st.prevPrice);
+  const aiRaw  = st.cumVol / (deltaP + CFG.EPSILON);
+  const aiLog  = Math.log10(Math.max(aiRaw, CFG.EPSILON));
+
+  // ── ∇AI ────────────────────────────────────────────────────────────────
+  const nabla = (aiLog - st.lastAiLog) / 300;   // per µs (300µs per tick approx)
+  st.nabla    = nabla;
+  st.lastAiLog = aiLog;
+  st.aiLog     = aiLog;
+
+  // ── τ via bisect ────────────────────────────────────────────────────────
+  welfordUpdate(st.welAI, aiLog);
+  if (st.aiHistCount >= 500) {
+    const oldest = st.aiLogHistory[st.aiHistHead];
+    const pos = bisectLeft(st.aiLogSorted, oldest);
+    if (pos < st.aiLogSorted.length && st.aiLogSorted[pos] === oldest)
+      st.aiLogSorted.splice(pos, 1);
+  }
+  st.aiLogHistory[st.aiHistHead] = aiLog;
+  st.aiHistHead = (st.aiHistHead + 1) % 500;
+  if (st.aiHistCount < 500) st.aiHistCount++;
+  bisectInsort(st.aiLogSorted, aiLog);
+
+  let tau = null;
+  const n_sorted = st.aiLogSorted.length;
+  if (n_sorted >= 50) {
+    const idx = Math.max(0, Math.floor(CFG.TAU_PERCENTILE * n_sorted) - 1);
+    tau = st.aiLogSorted[idx];
+  }
+  st.tau = tau;
+
+  // ── IFF ─────────────────────────────────────────────────────────────────
+  const iffR = iffTick(st, st.cumVol, deltaP, vol * 0.02, aiLog);
+  st.iffVerdict    = iffR.verdict;
+  st.dampingFactor = iffR.damp;
+
+  // ── CFR (aux proxy: aiLog ± ε) ──────────────────────────────────────────
+  const auxAis = [
+    aiLog + (Math.random()-0.5)*0.0002,
+    aiLog + (Math.random()-0.5)*0.0002,
+    aiLog + (Math.random()-0.5)*0.0002,
+    aiLog + (Math.random()-0.5)*0.0002,
+  ];
+  cfrTick(st, aiLog, auxAis, tick, isBatchEnd);
+
+  // ── Physical lock checks ─────────────────────────────────────────────────
+  const singularity = aiRaw < 1e-6;
+  const hardFloor   = aiLog < -3.0;
+  if (singularity || hardFloor) {
+    st.state  = "LOCKED";
+    st.score  = 0;
+    st.prevPrice = price;
+    return;
+  }
+
+  // ── FSM transitions (V2.5 extended) ─────────────────────────────────────
+  if (mstsResult.resonance) {
+    st.state = "RESONANCE";
+    st.score = 0;   // KILL SWITCH: force to 0 during RESONANCE
+    st.prevPrice = price;
+    return;
+  }
+  if (Math.abs(mstsResult.psiT) > CFG.PSI_SINGULAR) {
+    st.state = "LOCKED";
+    st.score = 0;
+    st.prevPrice = price;
+    return;
+  }
+  if (iffR.verdict === "FOE") {
+    st.state = "PHOENIX_STANDBY";
+    st.score = 0;
+    st.prevPrice = price;
+    return;
+  }
+
+  // V2.4 inherited transitions
+  const negNabla = nabla < CFG.NABLA_COLLAPSE;
+  if (st.state === "PHOENIX_STANDBY") {
+    // stay until aiLog recovers
+    if (aiLog > -1.0 && nabla >= 0) st._recStreak = (st._recStreak||0) + 1;
+    else                             st._recStreak = 0;
+    if ((st._recStreak||0) >= CFG.RECOVERY_TICKS) st.state = "RECOVERY";
+    st.score = 0;
+    st.prevPrice = price;
+    return;
+  }
+  if (st.state === "RECOVERY") {
+    if (aiLog > -1.0 && nabla >= 0) st._recStreak = (st._recStreak||0) + 1;
+    else { st.state = "PHOENIX_STANDBY"; st._recStreak = 0; st.score = 0; st.prevPrice = price; return; }
+    if ((st._recStreak||0) >= CFG.RECOVERY_TICKS) { st.state = "ACTIVE"; st._recStreak = 0; }
+    st.score = 0;
+    st.prevPrice = price;
+    return;
+  }
+  if (aiLog < -3.0) {
+    st.state = "FLASH_COLLAPSE";
+    st.score = 0;
+    st.prevPrice = price;
+    return;
+  }
+  if (st.state === "FLASH_COLLAPSE") { st.state = "PHOENIX_STANDBY"; st.score = 0; st.prevPrice = price; return; }
+
+  if (st.cfrPreDrift) {
+    st.state = "PRE_DRIFT";
+  } else if (negNabla) {
+    st.state = "DRIFT_WARNING";
+  } else if (st.state === "PRE_DRIFT" && !st.cfrPreDrift) {
+    st.state = "ACTIVE";
+  } else if (st.state === "DRIFT_WARNING" && !negNabla) {
+    st.state = "ACTIVE";
+  } else if (st.state !== "PRE_DRIFT" && st.state !== "DRIFT_WARNING") {
+    st.state = "ACTIVE";
+  }
+
+  // ── Gate & score ─────────────────────────────────────────────────────────
+  const admitted = (tau !== null) && (aiLog <= tau);
+  let score = admitted ? 1.0 : 0.0;
+  score *= iffR.damp;
+  if (st.cfrPreDrift) score *= Math.max(0, 1 - 0.5 * (st.rhoLL || 0));
+  st.score = Math.max(0, Math.min(1, score));
+
+  // ── Sparkline update ─────────────────────────────────────────────────────
+  st.sparkBuf[st.sparkHead] = aiLog;
+  st.sparkHead  = (st.sparkHead + 1) % 80;
+  if (st.sparkCount < 80) st.sparkCount++;
+
+  st.scoreHistory[st.scoreHead] = st.score;
+  st.scoreHead = (st.scoreHead + 1) % 80;
+
+  st.prevPrevPrice = st.prevPrice;
+  st.prevPrice = price;
+}
+
+// ═══════════════════════════════
+// PRICE SIMULATOR  (Gaussian random walk with occasional shocks)
+// ═══════════════════════════════
+const simRNG = (function() {
+  let _s = 42;
+  return function() {
+    _s = (_s * 1664525 + 1013904223) & 0xffffffff;
+    return ((_s >>> 1) / 2147483647.5) - 1;
+  };
+})();
+function randn() {
+  // Box-Muller (pre-allocated — reuse float fields, no objects)
+  const u = (simRNG() + 1) / 2 + 1e-10;
+  const v = (simRNG() + 1) / 2;
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+const prices = INSTRUMENTS.map(i => i.priceSeed);
+const vols   = INSTRUMENTS.map(i => i.volSeed);
+
+// ═══════════════════════════════
+// DOM CONSTRUCTION  (done once at init — no allocations in hot path)
+// ═══════════════════════════════
+const MSTS_SCALE_LABELS = ["W8","W16","W26","W40","W60","W100"];
+
+function buildCards() {
+  const grid = document.getElementById("card-grid");
+  INSTRUMENTS.forEach((inst, i) => {
+    const st = instStates[i];
+    const card = document.createElement("div");
+    card.className = "tcard";
+    card.id = `card-${i}`;
+    card.innerHTML = `
+      <div class="card-header">
+        <div>
+          <div class="card-symbol">${inst.id}</div>
+          <div class="card-exchange">${inst.exchange}</div>
+        </div>
+        <div id="iff-badge-${i}" class="card-iff-badge badge-neutral">NEUTRAL</div>
+      </div>
+      <div class="metrics-row">
+        <div class="metric-cell" data-tip="log₁₀(AI_t) = log₁₀(M_t/(|ΔP_t|+ε))">
+          <div class="metric-lbl">AI_LOG</div>
+          <div class="metric-val" id="m-ailog-${i}">—</div>
+        </div>
+        <div class="metric-cell" data-tip="∇AI adjusted after IFF self-impact strip">
+          <div class="metric-lbl" id="m-adj-lbl-${i}">AI_ADJ</div>
+          <div class="metric-val" id="m-aiadj-${i}">—</div>
+        </div>
+        <div class="metric-cell" data-tip="Admissibility score ∈ [0,1] after AWACS fusion">
+          <div class="metric-lbl">SCORE</div>
+          <div class="metric-val" id="m-score-${i}">—</div>
+        </div>
+      </div>
+      <div class="ai-toggle">
+        <div class="toggle-label">AI MODE:</div>
+        <div class="toggle-btn">
+          <button class="toggle-opt active" id="tog-raw-${i}" onclick="setAiMode(${i},'raw')">RAW</button>
+          <button class="toggle-opt"        id="tog-adj-${i}" onclick="setAiMode(${i},'adj')">ADJ</button>
+        </div>
+      </div>
+      <div class="sparkline-wrap">
+        <canvas class="sparkline" id="spark-${i}"></canvas>
+      </div>
+      <div class="msts-matrix">
+        <div class="msts-matrix-label">MSTS ΨE</div>
+        ${MSTS_SCALE_LABELS.map((l,s)=>`
+          <div class="msts-scale-block" id="msts-blk-${i}-${s}"
+               data-scale="${l}" data-tip="PSD[${s}] W=${CFG.SCALES[s]}">
+          </div>`).join('')}
+      </div>
+      <div class="nabla-row">
+        <div class="nabla-label">∇AI:</div>
+        <div class="nabla-arrow" id="nabla-arrow-${i}">—</div>
+        <div class="nabla-val" id="nabla-val-${i}">—</div>
+        <div style="flex:1"></div>
+        <div id="m-tau-${i}" style="font-family:var(--mono);font-size:9px;color:var(--text-dim)">τ=—</div>
+      </div>
+      <div class="score-row">
+        <div class="score-label">ADMIT</div>
+        <div class="score-bar-wrap"><div class="score-bar-fill" id="score-fill-${i}"></div></div>
+        <div class="score-num" id="score-num-${i}">0.00</div>
+      </div>
+      <div class="state-badge" id="state-badge-${i}">PHOENIX_STANDBY</div>
+    `;
+    grid.appendChild(card);
+
+    // Cache canvas refs (avoids getElementById in hot path)
+    st.sparkCanvas = document.getElementById(`spark-${i}`);
+    st.sparkCtx    = st.sparkCanvas.getContext("2d");
+  });
+}
+
+function setAiMode(i, mode) {
+  instStates[i].aiDisplayMode = mode;
+  const raw = document.getElementById(`tog-raw-${i}`);
+  const adj = document.getElementById(`tog-adj-${i}`);
+  if (mode === "raw") {
+    raw.classList.add("active"); adj.classList.remove("active");
+    document.getElementById(`m-adj-lbl-${i}`).textContent = "AI_ADJ";
+  } else {
+    adj.classList.add("active"); raw.classList.remove("active");
+    document.getElementById(`m-adj-lbl-${i}`).textContent = "AI_RAW";
+  }
+}
+
+// ═══════════════════════════════
+// SPARKLINE RENDERER  (no new objects — mutates pre-existing ctx state)
+// ═══════════════════════════════
+function drawSparkline(st) {
+  const canvas = st.sparkCanvas;
+  const ctx    = st.sparkCtx;
+  const W = canvas.offsetWidth, H = 44;
+  if (canvas.width !== W) { canvas.width = W; }
+  canvas.height = H;
+
+  const n = st.sparkCount;
+  if (n < 2) return;
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Collect values from ring buffer in order (oldest → newest)
+  let minV = Infinity, maxV = -Infinity;
+  const vals = new Float64Array(n);
+  const startIdx = n < 80 ? 0 : st.sparkHead;
+  for (let j = 0; j < n; j++) {
+    const v = st.sparkBuf[(startIdx + j) % 80];
+    vals[j] = v;
+    if (v < minV) minV = v;
+    if (v > maxV) maxV = v;
+  }
+  if (maxV === minV) { minV -= 0.5; maxV += 0.5; }
+  const range = maxV - minV;
+
+  // Draw τ line
+  if (st.tau !== null) {
+    const ty = H - ((st.tau - minV) / range) * H;
+    ctx.beginPath();
+    ctx.strokeStyle = "rgba(245,166,35,0.4)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3,3]);
+    ctx.moveTo(0, ty); ctx.lineTo(W, ty);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Draw AI_log line
+  const stateCol = STATE_COLOR[st.state] || "var(--text-dim)";
+  ctx.beginPath();
+  ctx.strokeStyle = stateCol;
+  ctx.lineWidth = 1.2;
+  for (let j = 0; j < n; j++) {
+    const x = (j / (n - 1)) * W;
+    const y = H - ((vals[j] - minV) / range) * H;
+    if (j === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Score overlay (subtle fill)
+  ctx.beginPath();
+  ctx.fillStyle = "rgba(0,200,122,0.06)";
+  for (let j = 0; j < n; j++) {
+    const x = (j / (n - 1)) * W;
+    const sv = st.scoreHistory[(st.scoreHead + j) % 80];
+    const sy = H - sv * H * 0.8;
+    if (j === 0) { ctx.moveTo(0, H); ctx.lineTo(x, sy); }
+    else ctx.lineTo(x, sy);
+  }
+  ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+}
+
+// ═══════════════════════════════
+// DOM UPDATE  (hot path — no new objects, only mutate existing element properties)
+// ═══════════════════════════════
+
+// Pre-cache all DOM refs to avoid getElementById in hot path
+const domCache = {};
+function cacheDom(i) {
+  domCache[i] = {
+    card:       document.getElementById(`card-${i}`),
+    ailog:      document.getElementById(`m-ailog-${i}`),
+    aiadj:      document.getElementById(`m-aiadj-${i}`),
+    mscore:     document.getElementById(`m-score-${i}`),
+    iffBadge:   document.getElementById(`iff-badge-${i}`),
+    nablaArrow: document.getElementById(`nabla-arrow-${i}`),
+    nablaVal:   document.getElementById(`nabla-val-${i}`),
+    mTau:       document.getElementById(`m-tau-${i}`),
+    scoreFill:  document.getElementById(`score-fill-${i}`),
+    scoreNum:   document.getElementById(`score-num-${i}`),
+    stateBadge: document.getElementById(`state-badge-${i}`),
+    mstBlocks:  Array.from({length:6}, (_,s)=>document.getElementById(`msts-blk-${i}-${s}`)),
+  };
+}
+
+const FSM_ALL_IDS = ["ACTIVE","PRE_DRIFT","RESONANCE","DRIFT_WARNING",
+                     "FLASH_COLLAPSE","PHOENIX_STANDBY","RECOVERY","LOCKED"];
+
+function updateDOM(i, st) {
+  const d = domCache[i];
+  if (!d) return;
+
+  // AI display (toggle)
+  const aiDisplayVal = st.aiDisplayMode === "adj" ? st.aiAdj : st.aiLog;
+  const aiOtherVal   = st.aiDisplayMode === "adj" ? st.aiLog : st.aiAdj;
+  d.ailog.textContent = isFinite(aiDisplayVal) ? aiDisplayVal.toFixed(4) : "—";
+  d.aiadj.textContent = isFinite(aiOtherVal)   ? aiOtherVal.toFixed(4)  : "—";
+  d.mscore.textContent= st.score.toFixed(4);
+
+  // ∇AI arrow
+  let arrCls = "nabla-zero", arrChar = "→";
+  if (st.nabla > 0.001) { arrCls = "nabla-pos"; arrChar = "↑"; }
+  else if (st.nabla < -0.001) { arrCls = "nabla-neg"; arrChar = "↓"; }
+  d.nablaArrow.textContent = arrChar;
+  d.nablaArrow.className   = `nabla-arrow ${arrCls}`;
+  d.nablaVal.textContent   = isFinite(st.nabla) ? st.nabla.toExponential(2) : "—";
+  d.mTau.textContent = st.tau !== null ? `τ=${st.tau.toFixed(3)}` : "τ=—";
+
+  // IFF badge
+  const iffBadgeCls = st.iffVerdict === "FRIEND" ? "card-iff-badge badge-fnd"
+                    : st.iffVerdict === "FOE"    ? "card-iff-badge badge-foe"
+                    :                             "card-iff-badge badge-neutral";
+  d.iffBadge.className    = iffBadgeCls;
+  d.iffBadge.textContent  = st.iffVerdict === "FRIEND" ? "FND"
+                           : st.iffVerdict === "FOE"   ? "FOE" : "NEU";
+
+  // Score bar
+  const pct     = (st.score * 100).toFixed(1) + "%";
+  const barColor= st.score > 0.5 ? "#00c87a"
+                : st.score > 0.2 ? "#f5a623" : "#5a7a94";
+  d.scoreFill.style.width      = pct;
+  d.scoreFill.style.background = barColor;
+  d.scoreNum.textContent = st.score.toFixed(2);
+
+  // State badge
+  const sc = STATE_COLOR[st.state] || "var(--text-dim)";
+  const sa = STATE_ANIM[st.state] || "";
+  d.stateBadge.textContent = st.state === "LOCKED" ? "🔒 LOCKED (PHYSICAL)" : st.state;
+  d.stateBadge.className   = `state-badge ${sa}`;
+  d.stateBadge.style.borderColor  = sc;
+  d.stateBadge.style.color        = sc;
+  d.stateBadge.style.background   = `color-mix(in srgb, ${sc} 10%, transparent)`;
+
+  // Card left border
+  d.card.style.setProperty("--card-state-color", sc);
+
+  // MSTS energy blocks — heatmap (0=dark, 1=saturated)
+  const maxPSD = Math.max(...st.mstsPSD, 1e-10);
+  for (let s = 0; s < 6; s++) {
+    const pct2 = Math.min(1, st.mstsPSD[s] / maxPSD);
+    const active = st.mstsPSD[s] > st.mstsSigmaLimit;
+    const baseHue = active ? "270" : "210";
+    const sat     = active ? "80" : "40";
+    d.mstBlocks[s].style.background =
+      `hsl(${baseHue}, ${sat}%, ${Math.round(8 + pct2 * 45)}%)`;
+    d.mstBlocks[s].style.borderColor = active
+      ? `hsla(270,80%,70%,0.6)` : "rgba(255,255,255,0.05)";
+  }
+
+  // Sparkline
+  drawSparkline(st);
+}
+
+// ═══════════════════════════════
+// HUD UPDATE  (no allocation)
+// ═══════════════════════════════
+function updateHUD(latMs, globalTick) {
+  const st0 = instStates[0];  // Primary instrument for global HUD
+
+  // CFR
+  const rho = (st0.rhoLL || 0);
+  document.getElementById("hud-rho").textContent = rho.toFixed(4);
+  document.getElementById("hud-rho-sub").textContent =
+    `4-channel · PRE_DRIFT=${st0.cfrPreDrift?"YES":"NO"} · threshold=0.60`;
+
+  // MSTS
+  let totActive = 0;
+  for (let s = 0; s < 6; s++) {
+    if (st0.mstsPSD[s] > st0.mstsSigmaLimit) totActive++;
+  }
+  document.getElementById("hud-msts").textContent = `${totActive} / 6`;
+  document.getElementById("hud-msts-sub").textContent =
+    `σ_limit=${st0.mstsSigmaLimit.toExponential(2)} · resonance=${st0.state==="RESONANCE"?"ACTIVE":"OFF"}`;
+
+  // IFF
+  const iffEl = document.getElementById("hud-iff");
+  iffEl.textContent = st0.iffVerdict;
+  iffEl.className   = st0.iffVerdict === "FRIEND" ? "hud-value iff-friend"
+                    : st0.iffVerdict === "FOE"    ? "hud-value iff-foe"
+                    :                               "hud-value iff-neutral";
+  document.getElementById("hud-iff-sub").textContent =
+    `damping factor: ${(st0.dampingFactor||1).toFixed(3)}`;
+
+  // Latency
+  welfordUpdate(hudWelLat, latMs);
+  document.getElementById("hud-lat").textContent = latMs.toFixed(3);
+
+  // FSM strip — highlight active state for instrument 0
+  FSM_ALL_IDS.forEach(id => {
+    const el = document.getElementById(`fsm-${id}`);
+    if (!el) return;
+    if (id === st0.state) {
+      el.classList.add("active-state");
+      el.querySelector(".name").style.color = STATE_COLOR[id];
+    } else {
+      el.classList.remove("active-state");
+      el.querySelector(".name").style.color = "";
+    }
+  });
+
+  // FFI activity bars (animated)
+  const t = globalTick / 100;
+  document.getElementById("ffi-b0").style.width = (20 + 15*Math.sin(t*0.7)).toFixed(1)+"%";
+  document.getElementById("ffi-b1").style.width = (35 + 20*Math.sin(t*0.3)).toFixed(1)+"%";
+  document.getElementById("ffi-b2").style.width = Math.min(100, Math.abs(rho) * 100).toFixed(1)+"%";
+  document.getElementById("ffi-b3").style.width = (50 + 25*Math.sin(t*1.1)).toFixed(1)+"%";
+  document.getElementById("ffi-b4").style.width = (60 + 20*Math.sin(t*0.5)).toFixed(1)+"%";
+  document.getElementById("ffi-b5").style.width = "100%";
+}
+
+// ═══════════════════════════════
+// MAIN LOOP
+// ═══════════════════════════════
+let globalTick = 0;
+const TICKS_PER_FRAME = 8;
+
+function simFrame() {
+  const t0 = performance.now();
+
+  for (let t = 0; t < TICKS_PER_FRAME; t++) {
+    INSTRUMENTS.forEach((inst, i) => {
+      const st = instStates[i];
+
+      // Simulate price
+      let shockFactor = 1;
+      const r = Math.random();
+      if (r < 0.003)      shockFactor = 15 + Math.random() * 30;  // flash crash
+      else if (r < 0.025) shockFactor = 3  + Math.random() * 5;   // noise spike
+
+      prices[i] += randn() * (inst.priceSeed * 0.0003) * shockFactor;
+      prices[i]  = Math.max(prices[i], inst.priceSeed * 0.1);
+      vols[i]    = Math.abs(inst.volSeed + randn() * 0.5);
+
+      physicsTick(st, prices[i], vols[i], globalTick);
+    });
+    globalTick++;
+  }
+
+  const latMs = (performance.now() - t0) / TICKS_PER_FRAME;
+
+  INSTRUMENTS.forEach((_, i) => updateDOM(i, instStates[i]));
+  updateHUD(latMs, globalTick);
+
+  requestAnimationFrame(simFrame);
+}
+
+// ═══════════════════════════════
+// BOOT
+// ═══════════════════════════════
+buildCards();
+INSTRUMENTS.forEach((_, i) => cacheDom(i));
+
+// Warm-up: run 120 silent ticks before display
+for (let t = 0; t < 120; t++) {
+  INSTRUMENTS.forEach((inst, i) => {
+    prices[i] += randn() * inst.priceSeed * 0.0003;
+    prices[i]  = Math.max(prices[i], inst.priceSeed * 0.1);
+    vols[i]    = Math.abs(inst.volSeed + randn() * 0.5);
+    physicsTick(instStates[i], prices[i], vols[i], t);
+  });
+}
+globalTick = 120;
+
+requestAnimationFrame(simFrame);
+</script>
+</body>
+</html>

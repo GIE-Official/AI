@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as follows."
+title: "The Ma-Chao Equation: Non-Hermitian Geometry and Topological Phase Transitions in Information-Fluid Hydrodynamics"
+version: "2.5.0"
+doi: "10.5281/zenodo.18918082"
+date-released: "2026-03-09"
+url: "https://github.com/GIE-Official/AI"
+authors:
+  - family-names: "Ma"
+    given-names: "Chao"
+    email: "raymond.ma@me.com"
+    orcid: "https://orcid.org/0009-0004-2456-9098"
