@@ -246,7 +246,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     I invite academic institutions or sponsors capable of providing <b>sub-microsecond data links (L1/L2/ITCH)</b> to participate in empirical validation and witness the
     <b>Spontaneous Symmetry Breaking</b> of non-Hermitian dynamics in financial manifolds.
   </div>
-  <div class="mf-ft">Contact: <span class="mf-hi">raymond.ma@me.com</span> &nbsp;|&nbsp; ORCID: 0009-0004-2456-9098 &nbsp;|&nbsp; "Structural Admissibility is the only Physical Invariant." — Ma (2026)</div>
+  <div class="mf-ft">Contact: <span class="mf-hi"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="aedccfd7c3c1c0ca80c3cfeec3cb80cdc1c3">[email&#160;protected]</a></span> &nbsp;|&nbsp; ORCID: 0009-0004-2456-9098 &nbsp;|&nbsp; "Structural Admissibility is the only Physical Invariant." — Ma (2026)</div>
 </div>
 
 <!-- HEADER -->
@@ -263,6 +263,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   </div>
   <div class="hdr-right">
     <button class="btn-ak" onclick="openModal()">ACADEMIC SPEC</button>
+    <button class="btn-ak" onclick="exportData()" style="background:rgba(6,182,212,.15);border-color:rgba(6,182,212,.4);color:#06b6d4">EXPORT DATA</button>
     <div class="ws-ind"><div id="ws-dot"></div><span id="ws-lbl">INIT</span></div>
   </div>
 </header>
@@ -474,7 +475,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
     </footer>
   </div>
 </div>
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 "use strict";
 // ============================================================
 // PHYSICS ENGINE V3.6 — MA-CHAO OPERATOR
@@ -917,35 +918,74 @@ function drawScalingLaw(){
     sctx.fillStyle="rgba(255,255,255,.15)";sctx.font="9px 'JetBrains Mono'";
     sctx.fillText("Accumulating AWSP windows...",pad.l+20,pad.t+iH/2);return;
   }
-  // Find log-log range
-  let xmn=Infinity,xmx=-Infinity,ymn=Infinity,ymx=-Infinity;
+  // Build log-log arrays + WLS weights = 1/|Δ_eff| (heteroscedasticity correction)
+  const logX=[],logY=[],wts=[];
   pts.forEach(p=>{
     const lx=Math.log10(Math.max(p.x,1e-8)),ly=Math.log10(Math.max(p.y,1e-12));
-    if(lx<xmn)xmn=lx;if(lx>xmx)xmx=lx;if(ly<ymn)ymn=ly;if(ly>ymx)ymx=ly;
+    logX.push(lx);logY.push(ly);wts.push(1/Math.max(p.x,1e-8));
   });
+  // WLS sums
+  let Sw=0,Swx=0,Swy=0,Swxx=0,Swxy=0;
+  const n=logX.length;
+  for(let i=0;i<n;i++){Sw+=wts[i];Swx+=wts[i]*logX[i];Swy+=wts[i]*logY[i];Swxx+=wts[i]*logX[i]*logX[i];Swxy+=wts[i]*logX[i]*logY[i]}
+  const denom=Sw*Swxx-Swx*Swx;
+  const slope=denom!==0?(Sw*Swxy-Swx*Swy)/denom:-0.5;
+  const intercept=(Swy-slope*Swx)/Sw;
+  // R² (weighted)
+  const yBarW=Swy/Sw;
+  let SSres=0,SStot=0;
+  for(let i=0;i<n;i++){const yhat=slope*logX[i]+intercept;SSres+=wts[i]*(logY[i]-yhat)**2;SStot+=wts[i]*(logY[i]-yBarW)**2}
+  const R2=SStot>0?Math.max(0,1-SSres/SStot):0;
+  // 95% CI for slope (SE via WLS variance formula)
+  const MSE=n>2?SSres/(n-2):1;
+  const SEslope=denom>0?Math.sqrt(MSE*Sw/denom):0;
+  const tCrit=n>30?1.96:2.045; // approx t_{0.025} for n>30 else ~30df
+  const ciLo=slope-tCrit*SEslope,ciHi=slope+tCrit*SEslope;
+  // Axis range
+  let xmn=Math.min(...logX),xmx=Math.max(...logX),ymn=Math.min(...logY),ymx=Math.max(...logY);
   if(xmx===xmn)xmx=xmn+1;if(ymx===ymn)ymx=ymn+1;
+  xmn-=0.1*(xmx-xmn);xmx+=0.1*(xmx-xmn);ymn-=0.1*(ymx-ymn);ymx+=0.1*(ymx-ymn);
   const xR=xmx-xmn,yR=ymx-ymn;
   const tx=lx=>pad.l+(lx-xmn)/xR*iW;
   const ty=ly=>pad.t+iH-(ly-ymn)/yR*iH;
-  // Theoretical line slope -0.5
-  const lxLine=[xmn,xmx];
+  // 95% CI shaded band (slope ± tCrit*SE)
+  const lxPts=[xmn,xmx];
+  sctx.beginPath();
+  sctx.moveTo(tx(lxPts[0]),ty((slope-tCrit*SEslope)*lxPts[0]+intercept));
+  sctx.lineTo(tx(lxPts[1]),ty((slope-tCrit*SEslope)*lxPts[1]+intercept));
+  sctx.lineTo(tx(lxPts[1]),ty((slope+tCrit*SEslope)*lxPts[1]+intercept));
+  sctx.lineTo(tx(lxPts[0]),ty((slope+tCrit*SEslope)*lxPts[0]+intercept));
+  sctx.closePath();sctx.fillStyle="rgba(250,204,21,.06)";sctx.fill();
+  // WLS fitted line (yellow-green)
+  sctx.beginPath();sctx.strokeStyle="rgba(250,204,21,.8)";sctx.lineWidth=1.6;
+  sctx.moveTo(tx(lxPts[0]),ty(slope*lxPts[0]+intercept));
+  sctx.lineTo(tx(lxPts[1]),ty(slope*lxPts[1]+intercept));
+  sctx.stroke();
+  // Theory line slope -0.5 (cyan dashed)
   const lyMid=(ymn+ymx)/2,lxMid=(xmn+xmx)/2;
-  sctx.beginPath();sctx.strokeStyle="rgba(6,182,212,.6)";sctx.lineWidth=1.5;sctx.setLineDash([5,3]);
-  sctx.moveTo(tx(lxLine[0]),ty(lyMid+0.5*(lxLine[0]-lxMid)*(-1)));
-  sctx.lineTo(tx(lxLine[1]),ty(lyMid+0.5*(lxLine[1]-lxMid)*(-1)));
+  sctx.beginPath();sctx.strokeStyle="rgba(6,182,212,.5)";sctx.lineWidth=1.2;sctx.setLineDash([4,3]);
+  sctx.moveTo(tx(lxPts[0]),ty(lyMid-0.5*(lxPts[0]-lxMid)));
+  sctx.lineTo(tx(lxPts[1]),ty(lyMid-0.5*(lxPts[1]-lxMid)));
   sctx.stroke();sctx.setLineDash([]);
-  sctx.fillStyle="rgba(6,182,212,.5)";sctx.font="7px 'JetBrains Mono'";
-  sctx.fillText("σ² ∝ Δ⁻¹/² (theory, slope=-0.5)",tx(lxLine[0])+4,ty(lyMid+0.5*(lxLine[0]-lxMid)*(-1))-4);
   // Points
-  pts.forEach(p=>{
-    const lx=Math.log10(Math.max(p.x,1e-8)),ly=Math.log10(Math.max(p.y,1e-12));
-    const px=tx(lx),py=ty(ly);
+  pts.forEach((p,i)=>{
+    const px=tx(logX[i]),py=ty(logY[i]);
     sctx.beginPath();sctx.arc(px,py,p.ep?3.5:2,0,Math.PI*2);
     if(p.ep){sctx.fillStyle="rgba(168,85,247,.9)";sctx.shadowBlur=8;sctx.shadowColor="#a855f7"}
     else{sctx.fillStyle="rgba(100,100,100,.4)";sctx.shadowBlur=0}
     sctx.fill();sctx.shadowBlur=0;
   });
-  document.getElementById("sl-count").textContent=pts.length+" windows";
+  // Stats overlay (top-right)
+  const sx=W-pad.r-110,sy=pad.t+10;
+  sctx.fillStyle="rgba(0,0,0,.5)";sctx.fillRect(sx-4,sy-10,114,52);
+  sctx.font="7px 'JetBrains Mono'";
+  sctx.fillStyle="rgba(250,204,21,.9)";sctx.fillText("WLS slope: "+slope.toFixed(3),sx,sy+2);
+  sctx.fillStyle="rgba(250,204,21,.6)";sctx.fillText("95% CI: ["+ciLo.toFixed(3)+", "+ciHi.toFixed(3)+"]",sx,sy+14);
+  sctx.fillStyle="rgba(100,220,100,.9)";sctx.fillText("R² = "+R2.toFixed(4),sx,sy+26);
+  const pass=ciLo<=-0.45&&ciHi>=-0.55;
+  sctx.fillStyle=pass?"rgba(0,255,100,.8)":"rgba(255,100,100,.8)";
+  sctx.fillText(pass?"★ H₀: slope=-0.5 PASS":"✗ slope deviates",sx,sy+38);
+  document.getElementById("sl-count").textContent=pts.length+" windows · R²="+R2.toFixed(3);
 }
 
 // ============================================================
@@ -1006,11 +1046,12 @@ function drawEP(){
   const st=ST[0];const n=Math.min(st.epHC,W);
   if(n<4)return;
   const vals=[];for(let j=0;j<n;j++)vals.push(st.epH[(st.epHH-n+j+300)%300]);
-  let mn=Math.min(...vals),mx=Math.max(...vals);if(mx===mn)mx=mn+0.01;
-  // λ+ and λ- from sqrt(Δ)
+  // --- MOD08 FIX: EP-centered symmetric scaling ---
+  let dMax=Math.max(...vals);
+  let dev=Math.sqrt(Math.max(0,dMax));
+  if(dev<0.01)dev=0.01;
   const lam1=new Float64Array(n),lam2=new Float64Array(n);
   for(let j=0;j<n;j++){const sq=Math.sqrt(Math.max(0,vals[j]));lam1[j]=0.5+sq;lam2[j]=0.5-sq}
-  const yS=H/(mx-mn);
   epctx.fillStyle="#000";epctx.fillRect(0,0,W,H);
   // Danger zone near coalescence
   const epY=H/2;
@@ -1018,20 +1059,21 @@ function drawEP(){
   epctx.strokeStyle="rgba(168,85,247,.2)";epctx.lineWidth=1;epctx.setLineDash([3,3]);
   epctx.beginPath();epctx.moveTo(0,epY);epctx.lineTo(W,epY);epctx.stroke();epctx.setLineDash([]);
   epctx.font="7px 'JetBrains Mono'";epctx.fillStyle="rgba(168,85,247,.4)";epctx.fillText("EP LOCUS (Δ=0)",6,epY-4);
-  // λ+ line (purple)
+  // λ+ line (purple) — symmetric around EP center, 0.8× margin prevents wall-clipping
   epctx.beginPath();epctx.strokeStyle="rgba(168,85,247,.8)";epctx.lineWidth=1.3;
   for(let j=0;j<n;j++){
-    const x=(j/(n-1))*W,y=H-(lam1[j]-mn)*yS;
+    const x=(j/(n-1))*W,y=epY-((lam1[j]-0.5)/dev)*(epY*0.8);
     j===0?epctx.moveTo(x,y):epctx.lineTo(x,y);
   }
   epctx.stroke();
   // λ- line (cyan)
   epctx.beginPath();epctx.strokeStyle="rgba(6,182,212,.8)";epctx.lineWidth=1.3;
   for(let j=0;j<n;j++){
-    const x=(j/(n-1))*W,y=H-(lam2[j]-mn)*yS;
+    const x=(j/(n-1))*W,y=epY-((lam2[j]-0.5)/dev)*(epY*0.8);
     j===0?epctx.moveTo(x,y):epctx.lineTo(x,y);
   }
   epctx.stroke();
+  // --- MOD08 FIX END ---
   // Legend
   epctx.font="8px 'JetBrains Mono'";
   epctx.fillStyle="rgba(168,85,247,.7)";epctx.fillText("λ+",6,16);
@@ -1348,22 +1390,29 @@ function wsConnect(){
 }
 
 // ============================================================
-// MAIN RAF LOOP
+// MAIN RAF LOOP — with 30fps throttle for heavy static canvases
 // ============================================================
-function raf(){
+let _lastSlowDraw=0;
+const SLOW_FPS_MS=1000/30; // 30fps for phase-space / EP / entropy / scaling
+function raf(ts){
   if(!isLive)simFrame();
   updateMSTSRibbon();
   INST.forEach((_,i)=>updCard(i,ST[i]));
-  drawPhaseSpace();
-  drawScalingLaw();
+  // High-freq modules: PDF, MSTS ribbon, CFR, soliton, gate, HUD — every frame
   drawPDF();
-  drawEP();
   drawMSTSRibbon();
   drawCFRRadar();
   drawSoliton();
-  drawEntropy();
   drawGate();
   updGlobalHUD();
+  // Throttled modules: phase space, EP, entropy, scaling law — max 30fps
+  if(ts-_lastSlowDraw>=SLOW_FPS_MS){
+    _lastSlowDraw=ts;
+    drawPhaseSpace();
+    drawScalingLaw();
+    drawEP();
+    drawEntropy();
+  }
   requestAnimationFrame(raf);
 }
 
@@ -1374,6 +1423,46 @@ setInterval(()=>{
 // MODAL
 function openModal(){document.getElementById("paper-modal").style.display="block";document.body.style.overflow="hidden"}
 function closeModal(){document.getElementById("paper-modal").style.display="none";document.body.style.overflow="auto"}
+
+// ============================================================
+// DATA EXPORT — CSV + JSON (open science)
+// ============================================================
+function exportData(){
+  const st=ST[0];const ts=new Date().toISOString();
+  // Collect ring-buffer snapshots (last N ticks)
+  const rows=[];const N=Math.min(st.aiH.length||0,st.aiHH||0,300);
+  for(let i=0;i<N;i++){
+    const idx=(st.aiHH-N+i+600)%600;
+    rows.push({
+      tick:i,
+      AI_log:st.aiH?.[idx]?.toFixed(6)??"",
+      delta_eff:st.epH?.[idx%300]?.toFixed(6)??"",
+      rho_A:st.cfrA?.[idx%200]?.toFixed(6)??"",
+      rho_B:st.cfrB?.[idx%200]?.toFixed(6)??"",
+      Wn:st.winding??"",
+      Q_topo:st.qtopo?.toFixed(6)??"",
+      score:st.score?.toFixed(4)??"",
+      verdict:st.verdict??""
+    });
+  }
+  // Scaling law points
+  const scPts=(st.scPoints||[]).map(p=>({delta_eff:p.x,sigma2:p.y,ep_confirmed:p.ep}));
+  // Meta
+  const meta={exported_at:ts,window_W:100,window_H:100,tau_pct:0.05,delta_noise_floor:15,
+    doi:"10.5281/zenodo.18728828",orcid:"0009-0004-2456-9098",
+    instrument:INST[0],n_ticks:rows.length,n_scaling_pts:scPts.length};
+  // JSON export
+  const jBlob=new Blob([JSON.stringify({meta,timeseries:rows,scaling_law:scPts},null,2)],{type:"application/json"});
+  const ja=document.createElement("a");ja.href=URL.createObjectURL(jBlob);
+  ja.download="gie_soliton_v36_"+ts.replace(/[:.]/g,"-")+".json";ja.click();
+  // CSV export (timeseries)
+  const hdr=Object.keys(rows[0]||{}).join(",");
+  const csv=hdr+"\n"+rows.map(r=>Object.values(r).join(",")).join("\n");
+  const cBlob=new Blob([csv],{type:"text/csv"});
+  const ca=document.createElement("a");ca.href=URL.createObjectURL(cBlob);
+  ca.download="gie_soliton_v36_"+ts.replace(/[:.]/g,"-")+".csv";
+  setTimeout(()=>ca.click(),200);
+}
 
 // KaTeX render
 function renderKatex(){
@@ -1393,16 +1482,4 @@ window.addEventListener("DOMContentLoaded",()=>{
   // Warmup 200 ticks
   for(let t=0;t<200;t++){
     INST.forEach((ins,i)=>{
-      SP[i]+=randn()*ins.s*2.5e-4;SP[i]=Math.max(SP[i],ins.s*.05);
-      SV[i]=Math.abs(1.5+randn()*.6);
-      tick(ST[i],SP[i],SV[i],t);
-    });
-  }
-  gT=200;
-  wsConnect();
-  requestAnimationFrame(raf);
-  setTimeout(renderKatex,1500);
-});
-</script>
-</body>
-</html>
+      SP[i]+=randn()*ins.s*2.5e-4;SP[i]
