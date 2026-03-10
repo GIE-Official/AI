@@ -1482,4 +1482,16 @@ window.addEventListener("DOMContentLoaded",()=>{
   // Warmup 200 ticks
   for(let t=0;t<200;t++){
     INST.forEach((ins,i)=>{
-      SP[i]+=randn()*ins.s*2.5e-4;SP[i]
+      SP[i]+=randn()*ins.s*2.5e-4;SP[i]=Math.max(SP[i],ins.s*.05);
+      SV[i]=Math.abs(1.5+randn()*.6);
+      tick(ST[i],SP[i],SV[i],t);
+    });
+  }
+  gT=200;
+  wsConnect();
+  requestAnimationFrame(raf);
+  setTimeout(renderKatex,1500);
+});
+</script>
+</body>
+</html>
