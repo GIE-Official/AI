@@ -1429,39 +1429,107 @@ function closeModal(){document.getElementById("paper-modal").style.display="none
 // ============================================================
 function exportData(){
   const st=ST[0];const ts=new Date().toISOString();
-  // Collect ring-buffer snapshots (last N ticks)
-  const rows=[];const N=Math.min(st.aiH.length||0,st.aiHH||0,300);
+
+  // ── Step 1: Read ring-buffer snapshots (last min(aiHC,300) ticks) ──────────
+  const N=Math.min(st.aiHC||0,300);
+  if(N===0){alert("No data yet — wait for warmup to complete.");return;}
+  const epN=Math.min(st.epHC||0,300);
+  const rawRows=[];
   for(let i=0;i<N;i++){
-    const idx=(st.aiHH-N+i+600)%600;
-    rows.push({
+    const aiIdx=(st.aiHH-N+i+500)%500;   // aiH ring: size 500
+    const epIdx=(st.epHH-N+i+300)%300;   // epH ring:  size 300
+    const aiRaw=st.aiH[aiIdx];
+    const epRaw=st.epH[epIdx];
+    // Q_topo: recomputed per-tick using current ep window
+    const qtRaw=(epN>=10)?computeQtopo(st.epH,epN):NaN;
+    rawRows.push({
       tick:i,
-      AI_log:st.aiH?.[idx]?.toFixed(6)??"",
-      delta_eff:st.epH?.[idx%300]?.toFixed(6)??"",
-      rho_A:st.cfrA?.[idx%200]?.toFixed(6)??"",
-      rho_B:st.cfrB?.[idx%200]?.toFixed(6)??"",
-      Wn:st.winding??"",
-      Q_topo:st.qtopo?.toFixed(6)??"",
-      score:st.score?.toFixed(4)??"",
-      verdict:st.verdict??""
+      ai:aiRaw,
+      deff:epRaw,
+      rhoA:st.rhoA,   // last-known (updated each physics tick)
+      rhoB:st.rhoB,
+      wn:st.winding,
+      qt:qtRaw,
+      score:st.score,
+      verdict:st.verdict
     });
   }
-  // Scaling law points
-  const scPts=(st.scPoints||[]).map(p=>({delta_eff:p.x,sigma2:p.y,ep_confirmed:p.ep}));
-  // Meta
-  const meta={exported_at:ts,window_W:100,window_H:100,tau_pct:0.05,delta_noise_floor:15,
-    doi:"10.5281/zenodo.18728828",orcid:"0009-0004-2456-9098",
-    instrument:INST[0],n_ticks:rows.length,n_scaling_pts:scPts.length};
-  // JSON export
-  const jBlob=new Blob([JSON.stringify({meta,timeseries:rows,scaling_law:scPts},null,2)],{type:"application/json"});
-  const ja=document.createElement("a");ja.href=URL.createObjectURL(jBlob);
-  ja.download="gie_soliton_v36_"+ts.replace(/[:.]/g,"-")+".json";ja.click();
-  // CSV export (timeseries)
-  const hdr=Object.keys(rows[0]||{}).join(",");
-  const csv=hdr+"\n"+rows.map(r=>Object.values(r).join(",")).join("\n");
+
+  // ── Step 2: Clean & normalize — PRE Open Data standard ───────────────────
+  // Helper: safe float→string with 6dp, NaN fallback
+  const f6=v=>{const n=parseFloat(v);return(!isNaN(n)&&isFinite(n))?n.toFixed(6):"NaN"};
+  const f4=v=>{const n=parseFloat(v);return(!isNaN(n)&&isFinite(n))?n.toFixed(4):"NaN"};
+  // Helper: AI_log physical clamp [-5,5] + _ANOMALY flag
+  const clampAI=v=>{
+    const n=parseFloat(v);
+    if(isNaN(n)||!isFinite(n))return"NaN";
+    if(n>5.0) return"5.000000_ANOMALY";
+    if(n<-5.0)return"-5.000000_ANOMALY";
+    return n.toFixed(6);
+  };
+
+  const rows=rawRows.map(r=>({
+    tick:      r.tick,
+    AI_log:    clampAI(r.ai),
+    delta_eff: f6(r.deff),
+    rho_A:     f6(r.rhoA),
+    rho_B:     f6(r.rhoB),
+    Wn:        (r.wn!==undefined&&r.wn!==null&&r.wn!=="")?String(r.wn):"NaN",
+    Q_topo:    f6(r.qt),
+    score:     f4(r.score),
+    verdict:   (r.verdict&&r.verdict!=="")?r.verdict:"UNDETERMINED"
+  }));
+
+  // ── Step 3: Anomaly count for metadata ───────────────────────────────────
+  const nAnomaly=rows.filter(r=>r.AI_log.includes("_ANOMALY")).length;
+  const scPts=(st.scPoints||[]).map(p=>({delta_eff:f6(p.x),sigma2:f6(p.y),ep_confirmed:!!p.ep}));
+
+  // ── Step 4: CSV with # metadata header (Pandas read_csv comment='#' safe) ─
+  const metaHeader=
+    `# exported_at=${ts}, instrument=BTC-USDT, tau_pct=0.05, `+
+    `n_ticks=${rows.length}, n_anomaly_AI_log=${nAnomaly}, `+
+    `window_W=100, window_H=100, delta_noise_floor=15, `+
+    `doi=10.5281/zenodo.18728828, orcid=0009-0004-2456-9098, `+
+    `note=AI_log bounded to [-5.0,5.0] with _ANOMALY flag; NaN for pre-warmup fields\n`;
+  const hdr=Object.keys(rows[0]).join(",");
+  // Strict 9-field guard: assert no empty values
+  const csvBody=rows.map(r=>{
+    const vals=Object.values(r);
+    // Safety: replace any remaining empty string with NaN
+    return vals.map(v=>(v===""||v===undefined||v===null)?"NaN":v).join(",");
+  }).join("\n");
+  const csv=metaHeader+hdr+"\n"+csvBody;
+
+  // ── Step 5: JSON (full archive including scaling law) ─────────────────────
+  const exportObj={
+    meta:{
+      exported_at:ts,
+      instrument:"BTC-USDT",
+      tau_pct:0.05,
+      delta_noise_floor:15,
+      window_W:100,window_H:100,
+      n_ticks:rows.length,
+      n_anomaly_AI_log:nAnomaly,
+      n_scaling_pts:scPts.length,
+      doi:"10.5281/zenodo.18728828",
+      orcid:"0009-0004-2456-9098",
+      note:"AI_log bounded to physical limits [-5.0, 5.0]. Outliers marked with _ANOMALY. Pre-warmup fields: NaN."
+    },
+    timeseries:rows,
+    scaling_law:scPts
+  };
+
+  // ── Step 6: Trigger downloads ─────────────────────────────────────────────
   const cBlob=new Blob([csv],{type:"text/csv"});
-  const ca=document.createElement("a");ca.href=URL.createObjectURL(cBlob);
+  const ca=document.createElement("a");
+  ca.href=URL.createObjectURL(cBlob);
   ca.download="gie_soliton_v36_"+ts.replace(/[:.]/g,"-")+".csv";
-  setTimeout(()=>ca.click(),200);
+  ca.click();
+  const jBlob=new Blob([JSON.stringify(exportObj,null,2)],{type:"application/json"});
+  const ja=document.createElement("a");
+  ja.href=URL.createObjectURL(jBlob);
+  ja.download="gie_soliton_v36_"+ts.replace(/[:.]/g,"-")+".json";
+  setTimeout(()=>ja.click(),200);
 }
 
 // KaTeX render
