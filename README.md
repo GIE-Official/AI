@@ -1,158 +1,147 @@
-<!-- =======================
-     动态 Banner（外链 GIF，不需上传）
-======================= -->
+# ✨ **MA‑CHAO LAB V3.6**  
+# 🔱 **NON‑HERMITIAN SINGULARITY OBSERVATORY**  
+### **Premium Black‑Gold Edition**
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/maChao-Quantum/banner/main/cyber_quantum_banner.gif" width="100%" />
+<p align="left">
+  <a href="https://doi.org/10.5281/zenodo.18933114">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.18933114.svg" />
+  </a>
+  <a href="https://creativecommons.org/licenses/by/4.0/">
+    <img src="https://img.shields.io/badge/License-CC_BY_4.0-lightgrey.svg" />
+  </a>
+  <img src="https://img.shields.io/badge/Data-Open_Science-10b981.svg" />
 </p>
 
-<!-- =======================
-     科研感徽章
-======================= -->
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Physics-Non--Hermitian%20Geometry-3949AB?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Algorithm-Information--Fluid%20Hydrodynamics-00897B?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Latency-Sub--millisecond-00C853?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/Python-Scalar%20Native-0277BD?style=for-the-badge" />
-</p>
-
-<h1 align="center">The Ma‑Chao Equation v2.5</h1>
-<h3 align="center" style="margin-top:-10px;">Non-Hermitian Geometry and Topological Phase Transitions in Information‑Fluid Hydrodynamics</h3>
-
-<p align="center"><i>By Chao Ma — Independent Researcher (2026)</i></p>
+> **“Structural Admissibility is the only Physical Invariant.”**  
+> — *Chao Ma (2026)*
 
 
+──────────────────────────────────────────────  
+# **1. ABSTRACT**  
+──────────────────────────────────────────────  
 
-# 📘 Abstract
+The **Ma‑Chao Equation** Validation Engine operates as a continuous **Non‑Hermitian Topological Observatory**, mapping high‑frequency LOB tick data into a dynamically evolving **information‑fluid manifold**.
 
-The Ma‑Chao Equation provides a structural-admissibility metric for identifying  
-**topological phase transitions** and **liquidity voids** in high-frequency information fluids.
+While traditional quant models rely on **Brownian ergodicity**, this engine assumes:
 
-Key principles:
+**Flash crashes = spontaneous topological symmetry‑breaking events at Exceptional Points (EPs) in a complex Hamiltonian system.**
 
-- Thin liquidity → high continuation probability  
-- Dense liquidity → fast decay  
-- AI ratio reveals structural fragility  
+In other words:
 
+**Liquidity collapses are not “anomalies” — they are topological inevitabilities.**
 
 
-# 🔢 Core Formula (Atomic Integrity)
+──────────────────────────────────────────────  
+# **2. CORE PHYSICS (ENGINE V3.6)**  
+──────────────────────────────────────────────  
 
+The laboratory implements the full empirical protocol from the 54‑page monograph, consisting of **12 monitoring modules**.  
+The core structural‑physics modules include:
+
+### 🜁 **MOD 03 — Non‑Hermitian Phase Space**  
+Tracks the real‑time dynamical trajectory between:  
+- **Atomic Integrity:** \( AI_{\log} \)  
+- **Pressure Gradient:** \( \nabla AI \)
+
+### 🜂 **MOD 08 — EP Coalescence Tracker**  
+Visualizes branch‑cut geometry where eigenvalues  
+\[
+\lambda_{\pm}
+\]  
+coalesce at the discriminant:  
+\[
+\Delta_{eff} = 0
+\]
+
+→ This marks the onset of a **topological phase transition**.
+
+### 🜄 **MOD 12 — Empirical Scaling Law**  
+Real‑time verification of the predicted scaling relation:  
+\[
+\sigma^2 \propto \Delta^{-1/2}
+\]
+
+Includes:  
+- Weighted Least Squares (WLS)  
+- 95% Confidence Intervals  
+- Real‑time \(R^2\) under **AWSP** (Adaptive Window Splitting Protocol)
+
+### 🜃 **MOD 05 — Dual‑Pipeline CFR Radar**  
+Two-channel topological signal validation:  
+
+- Hawkes pre‑whitened correlation: \( \hat{\rho}_A \)  
+- CPSD spectral coherence: \( \hat{\rho}_B \)  
+
+Prevents aliasing, ensures structural certainty.
+
+
+──────────────────────────────────────────────  
+# **3. ARCHITECTURE & PERFORMANCE**  
+──────────────────────────────────────────────  
+
+To sustain **sub‑microsecond** L1/L2 throughput:
+
+### ⚡ **Asynchronous Physics Engine**  
+Core mathematical operators execute independently of UI rendering.  
+This guarantees that structural time \( \hat{\tau}_{corr} \) is never violated.
+
+### ⚡ **Offscreen Rendering Decoupling**  
+All visual components (phase space, soliton trackers, EP scans) run at **locked 30 FPS**, ensuring:
+
+- Zero timestamp drift  
+- Zero leakage  
+- Zero causality violations  
+
+Even at **100,000 ticks/second**.
+
+
+──────────────────────────────────────────────  
+# **4. OPEN SCIENCE & DATA REPLICATION**  
+──────────────────────────────────────────────  
+
+Click **[EXPORT DATA]** to obtain a reproducible audit log.
+
+### Export includes:
+
+### **Metadata**
+- timestamps  
+- instrument parameters  
+- exact AWSP truncation windows  
+
+### **9‑Dimensional Timeseries**
 ```
-AI_t = M_t / (|ΔP_t| + ε)
-```
-
-| Symbol | Meaning |
-|--------|---------|
-| `M_t` | Executed market mass |
-| `ΔP_t` | Displacement |
-| `ε` | Stabilizer |
-
-
-
-# 🌊 动态公式展示（外链 SVG，不需要上传）
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/maChao-Quantum/banner/main/ai_pulse.svg" width="480" />
-</p>
-
-
-
-# 🧠 Structural Interpretation
-
-```
-AI_t ∝ Liquidity Density / Price Motion
-```
-
-Low density → fragile structure → higher continuation.
-
-
-
-# 📁 Repository Structure
-
-```
-ai_core/
-  atomic_integrity.py
-  gie_soliton_v25.py
-  cfr_module.py
-  msts_module.py
-data_pipeline/
-  clean_trades.py
-  download_binance.py
-```
-
-
-
-# ⚙️ Installation
-
-```bash
-git clone https://github.com/GIE-Official/AI.git
-cd AI
-pip install -r requirements.txt
-```
-
-
-
-# 🧪 Benchmark
-
-Run main integration:
-
-```bash
-python ai_core/gie_soliton_v25.py
-```
-
-Expected:
-
-- Sub‑ms latency  
-- Dynamic state machine  
-- Structural collapse survival rates  
-
-
-
-# 📉 Key Results
-
-| Gate | Slippage (bps) | Δ vs Baseline |
-|------|----------------|----------------|
-| Baseline | 8.3 | — |
-| OFI Gate | 5.8 | −2.5 |
-| AI Gate | 4.2 | −4.1 |
-| VPIN Gate | 9.1 | +0.8 |
-
-
-
-# ⚠️ Limitations
-
-- Structural metric, not a trading signal  
-- Window dependent  
-- Requires tick-level trades  
-
-
-
-# 🔭 Future Research
-
-| Extension | Description |
-|-----------|-------------|
-| AI‑2 | Multiscale AI grid |
-| AI‑3 | Liquidity density gradient |
-| AI‑4 | Cross‑exchange analysis |
-
-
-
-# 📚 Citation
-
-```
-@article{ma2026machao,
-  title   = {The Ma-Chao Equation: Non-Hermitian Geometry and Topological Phase Transitions in Information-Fluid Hydrodynamics},
-  author  = {Ma, Chao},
-  year    = {2026},
-  doi     = {10.5281/zenodo.18918082},
-  url     = {https://doi.org/10.5281/zenodo.18918082}
-}
+tick, AI_log, delta_eff, rho_A, rho_B,
+Wn, Q_topo, score, verdict
 ```
 
+### **Boundary Protection**
+When \( \Delta P \to 0 \), structural divergences are:
+
+- Clamped to **[-5.0, 5.0]**  
+- Tagged with **_ANOMALY**  
+- Guaranteed clean for Pandas / R pipelines  
 
 
-# 📜 License
+──────────────────────────────────────────────  
+# **5. ACADEMIC INDEPENDENCE**  
+──────────────────────────────────────────────  
 
-MIT License
+The MA‑CHAO LAB is conducted under full **Independent Researcher Protocol**:
+
+- No institutional funding  
+- No corporate influence  
+- Full scientific sovereignty  
+
+Institutions capable of providing high‑fidelity L1/L2/ITCH feeds are welcome to participate in the empirical validation of **information‑fluid hydrodynamics**.
+
+
+──────────────────────────────────────────────  
+# 📩 **CONTACT & ATTRIBUTION**  
+──────────────────────────────────────────────  
+
+**Author:** Chao Ma  
+**Email:** raymond.ma@me.com  
+**ORCID:** https://orcid.org/0009-0004-2456-9098  
+
+If your research uses **AI_log**, **Δ_eff**, **AWSP**, or related structures,  
+please cite the project’s **Zenodo DOI**.
