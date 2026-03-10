@@ -44,7 +44,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 
 /* ── Tooltip ── */
 #cv-tooltip{position:fixed;background:rgba(15,18,28,.95);border:1px solid var(--bor2);
-  padding:6px 10px;font-size:11px;color:var(--txt);pointer-events:none;z-index:15000;
+  padding:6px 10px;font-size:12px;color:var(--txt);pointer-events:none;z-index:15000;
   display:none;letter-spacing:.04em;line-height:1.6;white-space:nowrap;
   box-shadow:0 4px 16px rgba(0,0,0,.5)}
 
@@ -59,9 +59,9 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   background:linear-gradient(90deg,rgba(59,158,255,.07),rgba(245,166,35,.03));
   border:1px dashed var(--blu);padding:18px 28px;margin:12px 16px 0;
 }
-.mf-title{font-size:11px;font-weight:700;color:var(--blu);letter-spacing:.2em;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.mf-title{font-size:12px;font-weight:700;color:var(--blu);letter-spacing:.2em;margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .mf-pulse{animation:p2 2s infinite}
-.mf-body{font-size:11px;color:var(--txt);line-height:1.9;max-width:1200px}
+.mf-body{font-size:12px;color:var(--txt);line-height:1.9;max-width:1200px}
 .mf-ft{margin-top:8px;font-size:10px;color:var(--dim)}
 .mf-hi{color:var(--gld);text-decoration:underline;cursor:pointer}
 
@@ -160,7 +160,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .mc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:10px}
 .mc-cell{background:var(--bg);border:1px solid var(--bor);padding:5px 7px}
 .mc-cl{font-size:9px;color:var(--sub);letter-spacing:.07em;text-transform:uppercase;margin-bottom:2px}
-.mc-cv{font-size:11px;font-weight:600;color:var(--dim)}
+.mc-cv{font-size:12px;font-weight:600;color:var(--dim)}
 .mc-cv.hi{color:var(--pur)}.mc-cv.ok{color:var(--grn)}.mc-cv.wn{color:var(--amb)}.mc-cv.ct{color:var(--red)}
 .spw{height:36px;background:var(--bg);border:1px solid var(--bor);position:relative;overflow:hidden;margin-bottom:6px}
 .spw canvas{position:absolute;inset:0;width:100%;height:100%}
@@ -250,14 +250,14 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
 .modal-h2{color:var(--txt);font-size:14px;margin-bottom:14px;letter-spacing:.07em}
 .modal-p{color:var(--dim);font-size:12px;line-height:2.0}
 .modal-eq-box{background:var(--bg);border:1px solid var(--bor2);padding:22px;margin-top:20px;min-height:80px}
-.modal-ul{color:var(--dim);font-size:11px;line-height:2.3;margin-top:12px;list-style:none}
+.modal-ul{color:var(--dim);font-size:12px;line-height:2.3;margin-top:12px;list-style:none}
 .modal-ul li b{color:var(--txt)}
 .modal-verdict-box{margin:30px 0;background:var(--purg);border:1px solid var(--pur);padding:25px}
 .modal-h3{color:var(--cyn);font-size:12px;letter-spacing:.1em;margin-bottom:14px}
-.verdict-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:11px;line-height:1.8}
+.verdict-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:12px;line-height:1.8}
 .v-chip{padding:3px 9px;border:1px solid currentColor;font-size:9px;letter-spacing:.1em;white-space:nowrap}
 .v-chip.p{color:var(--pur)}.v-chip.g{color:var(--grn)}.v-chip.d{color:var(--sub)}
-.modal-warn{background:rgba(251,113,133,.04);border:1px solid var(--red);padding:20px;margin-top:20px;font-size:11px;color:var(--dim);line-height:1.9}
+.modal-warn{background:rgba(251,113,133,.04);border:1px solid var(--red);padding:20px;margin-top:20px;font-size:12px;color:var(--dim);line-height:1.9}
 .modal-ft{border-top:1px solid var(--bor2);padding-top:20px;text-align:center;color:var(--sub);font-size:10px}
 
 /* ---- KEYFRAMES ---- */
@@ -306,7 +306,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
   </div>
   <div class="hdr-right">
     <button class="btn-ak" onclick="openModal()">ACADEMIC SPEC</button>
-    <button class="btn-ak" onclick="exportData()" style="background:rgba(6,182,212,.15);border-color:rgba(6,182,212,.4);color:#06b6d4">EXPORT DATA</button>
+    <button class="btn-ak" onclick="exportData()" style="background:rgba(34,211,238,.12);border-color:rgba(34,211,238,.4);color:#22d3ee">EXPORT DATA</button>
     <div class="ws-ind"><div id="ws-dot"></div><span id="ws-lbl">INIT</span></div>
   </div>
 </header>
@@ -839,10 +839,10 @@ function drawSpark(st){
   if(mx===mn){mn-=1;mx+=1}
   if(st.tau!==null){
     const ty=H-((st.tau-mn)/(mx-mn))*H;
-    cx.beginPath();cx.strokeStyle="rgba(168,85,247,.3)";cx.lineWidth=1;cx.setLineDash([2,2]);
+    cx.beginPath();cx.strokeStyle="rgba(59,158,255,.25)";cx.lineWidth=1;cx.setLineDash([2,2]);
     cx.moveTo(0,ty);cx.lineTo(W,ty);cx.stroke();cx.setLineDash([]);
   }
-  const colors={ACTIVE:"#10b981",PRE_DRIFT:"#f59e0b",RESONANCE:"#a855f7",DRIFT_WARNING:"#f97316",FLASH_COLLAPSE:"#f43f5e",PHOENIX_STANDBY:"#374151",RECOVERY:"#06b6d4",LOCKED:"#f43f5e"};
+  const colors={ACTIVE:"#10b981",PRE_DRIFT:"#f59e0b",RESONANCE:"#F5A623",DRIFT_WARNING:"#f97316",FLASH_COLLAPSE:"#f43f5e",PHOENIX_STANDBY:"#374151",RECOVERY:"#22d3ee",LOCKED:"#f43f5e"};
   cx.beginPath();cx.strokeStyle=colors[st.state]||"#374151";cx.lineWidth=1.3;
   for(let j=0;j<n;j++){
     const x=(j/(n-1))*W,y=H-((v[j]-mn)/(mx-mn))*H;
@@ -931,7 +931,7 @@ function drawPhaseSpace(){
     // Current point
     const cur=tr[n-1];
     const cx2=xC+cur.x*xS,cy2=yC-cur.y*yS;
-    pctx.beginPath();pctx.arc(cx2,cy2,3.5,0,Math.PI*2);pctx.fillStyle="#06b6d4";pctx.fill();
+    pctx.beginPath();pctx.arc(cx2,cy2,3.5,0,Math.PI*2);pctx.fillStyle="#22d3ee";pctx.fill();
     pctx.beginPath();pctx.arc(cx2,cy2,7,0,Math.PI*2);pctx.strokeStyle="rgba(6,182,212,.3)";pctx.lineWidth=1;pctx.stroke();
     // Singularity pull
     const isSing=cur.x<-2&&cur.y<-0.06;
@@ -1025,7 +1025,7 @@ function drawScalingLaw(){
   pts.forEach((p,i)=>{
     const px=tx(logX[i]),py=ty(logY[i]);
     sctx.beginPath();sctx.arc(px,py,p.ep?3.5:2,0,Math.PI*2);
-    if(p.ep){sctx.fillStyle="rgba(168,85,247,.9)";sctx.shadowBlur=8;sctx.shadowColor="#a855f7"}
+    if(p.ep){sctx.fillStyle="rgba(245,166,35,.9)";sctx.shadowBlur=8;sctx.shadowColor="#F5A623"}
     else{sctx.fillStyle="rgba(100,100,100,.4)";sctx.shadowBlur=0}
     sctx.fill();sctx.shadowBlur=0;
   });
