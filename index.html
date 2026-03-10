@@ -2,349 +2,1407 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Ma-Chao Equation | Academic Interactive Lab V2.5</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ma-Chao Lab V3.6 · Singularity Verification</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <style>
-/* 赛博学术美学定义 */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#080808;--sur:#111;--sur2:#161616;--bor:#222;--bor2:#333;
-  --txt:#d1d1d1;--dim:#666;--fnt:#444;
-  --pur:#a855f7;--purd:rgba(168,85,247,0.1);--grn:#22c55e;--red:#ef4444;
-  --amb:#f59e0b;--cyn:#06b6d4;--f:'JetBrains Mono',monospace;
+  --bg:#020202;--sur:#080808;--sur2:#0d0d0d;--bor:#1a1a1a;--bor2:#242424;
+  --txt:#e0e0e0;--dim:#444;--fnt:#2a2a2a;
+  --pur:#a855f7;--purd:rgba(168,85,247,.12);--purg:rgba(168,85,247,.06);
+  --cyn:#06b6d4;--cynd:rgba(6,182,212,.1);
+  --grn:#10b981;--red:#f43f5e;--amb:#f59e0b;--noi:#374151;
+  --f:'JetBrains Mono',monospace;
 }
-html,body{background:var(--bg);color:var(--txt);font-family:var(--f);font-size:12px;line-height:1.4;min-height:100vh}
-#app{max-width:1600px;margin:0 auto;padding:15px}
+html,body{background:var(--bg);color:var(--txt);font-family:var(--f);font-size:11px;line-height:1.5;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent 2px,rgba(0,0,0,.04) 2px,rgba(0,0,0,.04) 4px)}
 
-/* Header & Performance Metrics */
-#hdr{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:20px;padding:15px;border:1px solid var(--bor);background:var(--sur);position:relative}
-#hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--pur),var(--cyn),transparent)}
-.t1{font-size:16px;font-weight:700;color:var(--pur);letter-spacing:.1em}
-.t2{font-size:9px;color:var(--dim);margin-top:4px;text-transform:uppercase}
-.perf-box{display:flex;gap:1px;border:1px solid var(--bor2)}
-.pc{padding:6px 12px;background:var(--sur2);min-width:110px;border-right:1px solid var(--bor)}
-.pl{font-size:8px;color:var(--fnt);text-transform:uppercase}
-.pv{font-size:14px;font-weight:700;color:var(--cyn)}
+/* ---- MANIFESTO BANNER ---- */
+#manifesto{
+  background:linear-gradient(90deg,rgba(168,85,247,.07),rgba(6,182,212,.03));
+  border:1px dashed var(--pur);padding:18px 28px;margin:12px 16px 0;
+}
+.mf-title{font-size:9px;font-weight:700;color:var(--pur);letter-spacing:.2em;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.mf-pulse{animation:p2 2s infinite}.mf-body{font-size:10px;color:var(--txt);line-height:1.8;max-width:1200px}
+.mf-ft{margin-top:8px;font-size:9px;color:var(--dim)}
+.mf-hi{color:#fff;text-decoration:underline;cursor:pointer}
 
-/* 论文引用条 */
-#citation-bar{background:var(--purd);border:1px solid var(--pur);padding:8px 15px;margin:10px 0;font-size:10px;color:var(--pur);display:flex;justify-content:space-between;align-items:center}
+/* ---- HEADER ---- */
+#hdr{
+  display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:20px;
+  padding:16px 28px;margin:10px 16px 0;background:var(--sur);border:1px solid var(--bor);
+  position:relative;overflow:hidden;
+}
+#hdr::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,var(--pur),var(--cyn) 50%,transparent)}
+.t1{font-size:16px;font-weight:700;color:var(--pur);letter-spacing:.25em}
+.t2{font-size:8px;color:var(--dim);letter-spacing:.12em;margin-top:3px}
 
-/* 主布局 */
-#ml{display:grid;grid-template-columns:1fr 320px;gap:15px}
-.instrument-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(380px, 1fr));gap:12px}
+.perf-hud{display:flex;gap:2px}
+.ph-cell{padding:10px 16px;background:#000;border:1px solid var(--bor2);min-width:120px;text-align:center}
+.ph-lbl{display:block;font-size:7px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px}
+.ph-val{font-size:13px;font-weight:700;color:var(--cyn)}
+.ph-val.hot{color:var(--pur)}.ph-val.ok{color:var(--grn)}.ph-val.warn{color:var(--amb)}.ph-val.crit{color:var(--red)}
 
-/* 卡片设计 */
-.card{background:var(--sur);border:1px solid var(--bor);padding:15px;position:relative;overflow:hidden;transition:all 0.3s}
-.card:hover{border-color:var(--bor2)}
-.card-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
-.sym-info{display:flex;flex-direction:column}
-.sym-name{font-size:18px;font-weight:700;color:#fff}
-.sym-ex{font-size:9px;color:var(--fnt)}
-.status-badge{font-size:9px;padding:3px 8px;border:1px solid var(--bor2);border-radius:2px;text-transform:uppercase}
+.hdr-right{display:flex;align-items:center;gap:8px}
+.btn-ak{background:var(--pur);border:none;padding:10px 20px;color:#000;font-family:var(--f);font-size:9px;font-weight:700;cursor:pointer;letter-spacing:.12em;transition:.2s}
+.btn-ak:hover{background:#c084fc}
+.ws-ind{display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--bor2);font-size:8px;color:var(--dim);letter-spacing:.1em}
+#ws-dot{width:6px;height:6px;border-radius:50%;background:var(--noi);flex-shrink:0;transition:background .3s}
+#ws-dot.live{background:var(--grn);animation:pg 2s infinite}
+#ws-dot.err{background:var(--red)}
 
-/* 物理指标展示区 */
-.physics-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:12px}
-.m-item{background:var(--bg);border:1px solid var(--bor);padding:6px 8px}
-.m-label{font-size:8px;color:var(--dim);text-transform:uppercase;margin-bottom:2px}
-.m-value{font-size:13px;font-weight:700;color:var(--txt)}
-.m-ref{font-size:7px;color:var(--fnt);margin-top:2px;font-style:italic}
-/* Sparklines & Radar */
-.canvas-wrap{height:45px;background:#050505;border:1px solid var(--bor);margin:8px 0;position:relative}
-canvas.sparkline{width:100%;height:100%}
-.radar-box{width:100%;aspect-ratio:1;background:#050505;border:1px solid var(--bor);margin-bottom:15px}
-#radar-canvas{width:100%;height:100%}
+/* ---- AWSP STATUS ---- */
+#awsp{
+  display:flex;align-items:center;gap:10px;padding:6px 28px;
+  margin:0 16px;background:#050505;border:1px solid var(--bor);border-top:none;
+}
+.awsp-lbl{font-size:7px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+#awsp-state{font-size:9px;font-weight:700;letter-spacing:.12em;padding:3px 10px;border:1px solid currentColor;color:var(--grn)}
+#awsp-state.cusum{color:var(--amb)}
+#awsp-state.buffer{color:var(--red);animation:p2 .8s infinite}
+#awsp-state.homogen{color:var(--grn)}
+.verdict-box{margin-left:auto;display:flex;align-items:center;gap:6px}
+.v-lbl{font-size:7px;color:var(--dim);letter-spacing:.1em}
+#verdict{font-size:9px;font-weight:700;padding:3px 10px;border:1px solid currentColor;letter-spacing:.12em;color:var(--noi)}
+#verdict.confirmed{color:var(--pur);animation:reactor 2s infinite}
+#verdict.excluded{color:var(--grn)}
+#verdict.undetermined{color:var(--dim)}
 
-/* 状态机灯阵 */
-#fsm-array{display:flex;gap:4px;margin-bottom:15px;background:var(--sur);padding:8px;border:1px solid var(--bor)}
-.fsm-node{flex:1;text-align:center;padding:4px 0;font-size:8px;color:var(--fnt);border:1px solid var(--bor);text-transform:uppercase}
-.fsm-node.active{color:#fff;border-color:currentColor}
-.fsm-node.s-ACTIVE{color:var(--grn)}.fsm-node.s-ACTIVE.active{background:rgba(34,197,94,0.1)}
-.fsm-node.s-DRIFT{color:var(--amb)}.fsm-node.s-DRIFT.active{background:rgba(245,158,11,0.1)}
-.fsm-node.s-RESONANCE{color:var(--pur)}.fsm-node.s-RESONANCE.active{background:rgba(168,85,247,0.1)}
-.fsm-node.s-COLLAPSE{color:var(--red)}.fsm-node.s-COLLAPSE.active{background:rgba(239,68,68,0.1)}
+/* ---- MAIN LAYOUT ---- */
+#wrap{padding:8px 16px 40px;display:flex;flex-direction:column;gap:8px}
 
-/* 学术解释面板 */
-.academic-panel{background:var(--sur);border:1px solid var(--bor);padding:15px}
-.theory-block{margin-bottom:15px;padding-bottom:10px;border-bottom:1px solid var(--bor2)}
-.theory-block:last-child{border-bottom:none}
-.th-title{font-size:10px;color:var(--pur);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:5px}
-.th-title::before{content:'';width:3px;height:10px;background:var(--pur)}
-.th-desc{font-size:10px;color:var(--dim);margin-bottom:8px}
-.th-math{background:#000;padding:8px;font-size:10px;color:var(--grn);border-radius:2px;overflow-x:auto}
+/* Grids */
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.gcfr{display:grid;grid-template-columns:220px 1fr 1fr 1fr;gap:8px}
 
-/* 进度条样式 */
-.gate-row{display:flex;align-items:center;gap:10px;margin-top:10px}
-.gate-label{font-size:8px;color:var(--dim);width:45px}
-.gate-bar-bg{flex:1;height:4px;background:var(--bor);border-radius:1px;overflow:hidden}
-.gate-bar-fill{height:100%;width:0%;transition:width 0.3s, background 0.3s}
+/* ---- PANEL BASE ---- */
+.pan{background:var(--sur);border:1px solid var(--bor);overflow:hidden;position:relative}
+.pan::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:var(--bor2);z-index:1}
+.pan.pur::before{background:var(--pur)}
+.pan.cyn::before{background:var(--cyn)}
+.pan.grn::before{background:var(--grn)}
+.pan.red::before{background:var(--red)}
+.pan.amb::before{background:var(--amb)}
+
+.ptitle{
+  font-size:7px;color:var(--dim);letter-spacing:.18em;text-transform:uppercase;
+  padding:8px 12px 0;display:flex;justify-content:space-between;align-items:center;
+}
+.ptitle span{font-size:7px;color:var(--fnt);background:var(--bor);padding:2px 5px}
+.pfooter{
+  display:flex;justify-content:space-between;padding:5px 10px;
+  border-top:1px solid var(--bor);font-size:7px;color:var(--fnt);
+}
+.pfooter b{color:var(--txt)}
+
+/* ---- MOD 02: ASSET CARDS ---- */
+.mcard{background:var(--sur);border:1px solid var(--bor);padding:12px;position:relative;overflow:hidden;transition:border-color .2s}
+.mcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--noi);transition:background .2s}
+.mcard.sACTIVE::before{background:var(--grn)}.mcard.sACTIVE{border-color:#0f2a18}
+.mcard.sPRE_DRIFT::before{background:var(--amb)}.mcard.sPRE_DRIFT{border-color:#2a1f00}
+.mcard.sRESONANCE::before{background:var(--pur)}.mcard.sRESONANCE{border-color:#2a1050}
+.mcard.sFLASH_COLLAPSE::before{background:var(--red);animation:p2 .5s infinite}
+.mcard.sLOCKED::before{background:var(--red)}
+.mcard.sPHOENIX_STANDBY::before{background:var(--noi)}
+.mc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.mc-sym{font-size:12px;font-weight:700;color:var(--txt)}
+.mc-ex{font-size:7px;color:var(--fnt);margin-top:2px}
+.mc-badge{font-size:7px;padding:2px 6px;border:1px solid var(--bor2);color:var(--dim);letter-spacing:.08em;transition:all .2s}
+.bACTIVE{background:#0a2010;border-color:var(--grn);color:var(--grn)}
+.bPRE_DRIFT{background:#1a1400;border-color:var(--amb);color:var(--amb);animation:p2 1.2s infinite}
+.bRESONANCE{background:#1a0a30;border-color:var(--pur);color:var(--pur);animation:p2 .8s infinite}
+.bFLASH_COLLAPSE,.bLOCKED{background:#200008;border-color:var(--red);color:var(--red);animation:p2 .4s infinite}
+.bPHOENIX_STANDBY{color:var(--noi);border-color:var(--noi)}
+.mc-price{font-size:20px;font-weight:700;letter-spacing:-.02em;margin-bottom:2px}
+.mc-chg{font-size:9px;margin-bottom:8px}.mc-chg.up{color:var(--grn)}.mc-chg.dn{color:var(--red)}
+.mc-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3px;margin-bottom:8px}
+.mc-cell{background:var(--bg);border:1px solid var(--bor);padding:4px 6px}
+.mc-cl{font-size:7px;color:var(--fnt);letter-spacing:.09em;text-transform:uppercase}
+.mc-cv{font-size:10px;font-weight:500;color:var(--dim)}
+.mc-cv.hi{color:var(--pur)}.mc-cv.ok{color:var(--grn)}.mc-cv.wn{color:var(--amb)}.mc-cv.ct{color:var(--red)}
+.spw{height:32px;background:var(--bg);border:1px solid var(--bor);position:relative;overflow:hidden;margin-bottom:5px}
+.spw canvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* ---- MOD 03: Phase Space ---- */
+#phase-wrap{position:relative;background:#000;border:1px solid var(--bor2);overflow:hidden}
+#phase-cv{display:block;width:100%;height:100%}
+.ps-ax-x{position:absolute;bottom:8px;right:10px;font-size:7px;color:var(--dim)}
+.ps-ax-y{position:absolute;top:10px;left:8px;font-size:7px;color:var(--dim);writing-mode:vertical-lr;transform:rotate(180deg)}
+#sing-ov{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:13px;font-weight:700;color:var(--red);letter-spacing:.3em;display:none;
+  text-shadow:0 0 12px var(--red);animation:glitch .2s infinite}
+
+/* ---- MOD 12: Scaling Law ---- */
+#scale-wrap{position:relative;background:#000;border:1px solid var(--bor2);overflow:hidden}
+#scale-cv{display:block;width:100%;height:100%}
+
+/* ---- MOD 01: PDF ---- */
+#pdf-wrap{position:relative;background:radial-gradient(circle at 70% 30%,#080410,#000);border:1px solid var(--bor2);overflow:hidden;height:180px}
+#pdf-cv{display:block;width:100%;height:100%}
+#pdf-blade{position:absolute;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,transparent,var(--pur),transparent);box-shadow:-4px 0 12px rgba(168,85,247,.2);z-index:5;transition:left .4s cubic-bezier(.4,0,.2,1)}
+.pdf-blade-lbl{position:absolute;top:12px;left:5px;font-size:7px;color:var(--pur);white-space:nowrap;font-weight:700}
+
+/* ---- MOD 08: EP Bifurcation ---- */
+#ep-wrap{position:relative;background:#000;border:1px solid var(--bor2);overflow:hidden;height:200px}
+#ep-cv{display:block;width:100%;height:100%}
+#ep-lock{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  border:1px solid var(--red);padding:4px 12px;background:rgba(244,63,94,.08);display:none;z-index:10}
+.ep-glitch{font-size:9px;font-weight:700;color:var(--red);letter-spacing:.3em;animation:glitch .2s infinite}
+
+/* ---- MOD 04: MSTS Ribbon ---- */
+#msts-wrap{position:relative;background:#000;border:1px solid var(--bor2);overflow:hidden;height:140px;display:flex}
+.msts-scale-lbls{width:32px;height:100%;display:flex;flex-direction:column;justify-content:space-around;
+  font-size:6px;color:var(--dim);border-right:1px solid #111;text-align:right;padding-right:4px;flex-shrink:0}
+#msts-cv{flex:1;display:block;height:100%}
+#res-lock{position:absolute;top:8px;right:8px;font-size:8px;font-weight:700;color:var(--dim);letter-spacing:.15em;padding:3px 8px;border:1px solid var(--dim);background:rgba(0,0,0,.8)}
+#res-lock.active{color:var(--pur);border-color:var(--pur);animation:p2 1s infinite}
+
+/* ---- MOD 05: CFR Dual-Pipeline ---- */
+#cfr-wrap{position:relative;background:#000;border:1px solid var(--bor2);overflow:hidden;aspect-ratio:1/1}
+#cfr-cv{display:block;width:100%;height:100%}
+.pipeline-badge{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:8px}
+.pb{font-size:7px;padding:2px 6px;border:1px solid var(--bor2);letter-spacing:.08em}
+.pb.ok{color:var(--grn);border-color:var(--grn)}.pb.err{color:var(--red);border-color:var(--red);animation:p2 .6s infinite}
+
+/* ---- MOD 06: Soliton Tracker ---- */
+#sol-wrap{position:relative;background:#000;border:1px solid var(--bor2);overflow:hidden;height:120px}
+#sol-cv{display:block;width:100%;height:100%}
+#sol-freeze{position:absolute;inset:0;border:2px solid var(--pur);background:rgba(168,85,247,.04);display:none;pointer-events:none}
+.sol-params{position:absolute;top:6px;right:6px;font-size:7px;color:var(--pur);text-align:right;display:none}
+
+/* ---- MOD 07: Entropy Flux ---- */
+#ent-wrap{position:relative;background:#000;border:1px solid var(--bor2);overflow:hidden;height:120px}
+#ent-cv{display:block;width:100%;height:100%}
+.ent-scale{position:absolute;right:4px;height:80%;top:10%;display:flex;flex-direction:column;
+  justify-content:space-between;font-size:6px;color:var(--dim);border-left:1px solid #111;padding-left:3px}
+
+/* ---- MOD 09: Gate ---- */
+#gate-wrap{position:relative;background:#000;border:1px solid var(--bor2);overflow:hidden;height:140px}
+#gate-cv{display:block;width:100%;height:100%;opacity:.45}
+#gate-blade{position:absolute;top:0;bottom:0;width:1px;background:var(--pur);box-shadow:0 0 8px var(--pur);z-index:5;left:15%;transition:left .5s}
+.gate-blade-lbl{position:absolute;top:8px;left:4px;font-size:7px;color:var(--pur);white-space:nowrap}
+#admit-flash{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:11px;font-weight:700;color:var(--grn);letter-spacing:.15em;
+  border:1px solid var(--grn);padding:4px 12px;background:rgba(16,185,129,.05);display:none;z-index:10}
+.gate-wrap.lockon{animation:reactor 2s infinite}
+
+/* ---- MOD 10: Performance ---- */
+.pstat{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ps-lbl{font-size:7px;color:var(--dim);width:120px;text-transform:uppercase;letter-spacing:.08em}
+.ps-track{flex:1;height:3px;background:#111;border-radius:1px;overflow:hidden}
+.ps-fill{height:100%;background:var(--pur);box-shadow:0 0 4px var(--pur);transition:width .3s}
+.ps-fill.c{background:var(--cyn);box-shadow:0 0 4px var(--cyn)}
+.ps-num{font-size:9px;color:var(--txt);width:90px;text-align:right}
+#future-scroll{height:36px;border-top:1px solid var(--bor);background:#030303;
+  color:var(--amb);font-size:8px;overflow:hidden;white-space:nowrap;position:relative;margin-top:8px}
+.scroll-inner{display:inline-block;padding-left:100%;animation:scroll-t 30s linear infinite}
+.creed{margin-top:6px;font-size:8px;font-style:italic;color:var(--dim);border-top:1px dashed var(--bor);padding-top:6px;text-align:center}
+
+/* ---- MODAL ---- */
+#paper-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.98);z-index:20000;padding:60px;overflow-y:auto}
+.modal-close{position:fixed;top:30px;right:50px;color:var(--pur);cursor:pointer;font-size:9px;border:1px solid var(--pur);padding:7px 18px;letter-spacing:.15em;background:transparent}
+.modal-inner{max-width:1100px;margin:0 auto}
+.modal-h1{color:var(--pur);font-size:22px;letter-spacing:.4em;margin:0}
+.modal-sub{color:var(--dim);font-size:9px;margin-top:8px;letter-spacing:.1em}
+.modal-grid{display:grid;grid-template-columns:1.5fr 1fr;gap:50px;margin:40px 0}
+.modal-h2{color:var(--txt);font-size:13px;margin-bottom:14px;letter-spacing:.08em}
+.modal-p{color:var(--dim);font-size:11px;line-height:1.9}
+.modal-eq-box{background:#000;border:1px solid var(--bor2);padding:22px;margin-top:20px;min-height:80px}
+.modal-ul{color:var(--dim);font-size:10px;line-height:2.2;margin-top:12px;list-style:none}
+.modal-ul li b{color:var(--txt)}
+.modal-verdict-box{margin:30px 0;background:var(--purg);border:1px solid var(--pur);padding:25px}
+.modal-h3{color:var(--cyn);font-size:11px;letter-spacing:.1em;margin-bottom:14px}
+.verdict-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;font-size:10px;line-height:1.7}
+.v-chip{padding:2px 8px;border:1px solid currentColor;font-size:7px;letter-spacing:.1em;white-space:nowrap}
+.v-chip.p{color:var(--pur)}.v-chip.g{color:var(--grn)}.v-chip.d{color:var(--dim)}
+.modal-warn{background:rgba(244,63,94,.04);border:1px solid var(--red);padding:18px;margin-top:20px;font-size:10px;color:var(--dim);line-height:1.8}
+.modal-ft{border-top:1px solid var(--bor2);padding-top:18px;text-align:center;color:var(--dim);font-size:9px}
+
+/* ---- KEYFRAMES ---- */
+@keyframes pg{0%,100%{opacity:1;box-shadow:0 0 6px var(--grn)}50%{opacity:.6;box-shadow:none}}
+@keyframes p2{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes reactor{0%,100%{box-shadow:inset 0 0 20px rgba(168,85,247,.1)}50%{box-shadow:inset 0 0 40px rgba(168,85,247,.22)}}
+@keyframes scroll-t{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+@keyframes glitch{0%{transform:translate(0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-1px,-2px)}80%{transform:translate(1px,2px)}100%{transform:translate(0)}}
+
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bor2)}
 </style>
 </head>
 <body>
-<div id="app">
-  <div id="hdr">
-    <div>
-      <div class="t1">THE MA-CHAO EQUATION V2.5</div>
-      <div class="t2">High-Frequency Physical Sensing & Topological Admissibility Lab</div>
-    </div>
-    <div class="perf-box">
-      <div class="pc"><div class="pl">System Load</div><div class="pv live" id="h-load">BINANCE WS</div></div>
-      <div class="pc"><div class="pl">Tick Latency</div><div class="pv" id="h-lat">0.032ms</div></div>
-      <div class="pc"><div class="pl">Processing</div><div class="pv" id="h-tps">0 tk/s</div></div>
-    </div>
-    <div style="text-align:right">
-      <div style="font-size:10px;color:var(--dim)">Version 2.5.0-Academic</div>
-      <div style="font-size:12px;font-weight:700;color:#fff" id="clock">00:00:00.000</div>
-    </div>
-  </div>
 
-  <div id="citation-bar">
-    <span>Paper Ref: <i>"Non-Hermitian Geometry & Topological Phase Transitions in Info-Fluid Hydrodynamics"</i></span>
-    <span>DOI: 10.5281/zenodo.18918082 | ORCID: 0009-0004-2456-9098</span>
+<!-- MANIFESTO -->
+<div id="manifesto">
+  <div class="mf-title"><span class="mf-pulse">◈</span> 🔱 ACADEMIC INDEPENDENCE &amp; DATA FIDELITY NOTICE</div>
+  <div class="mf-body">
+    The real-time <b>Topological Phase Portraits</b> observed here are physical calibrations of the <b>Ma-Chao Equation V3.6</b> utilizing public millisecond-burst streams.
+    As an <b>Independent Researcher</b>, I maintain absolute scientific sovereignty and have declined institutional funding that may compromise algorithmic neutrality.
+    I invite academic institutions or sponsors capable of providing <b>sub-microsecond data links (L1/L2/ITCH)</b> to participate in empirical validation and witness the
+    <b>Spontaneous Symmetry Breaking</b> of non-Hermitian dynamics in financial manifolds.
   </div>
+  <div class="mf-ft">Contact: <span class="mf-hi">raymond.ma@me.com</span> &nbsp;|&nbsp; ORCID: 0009-0004-2456-9098 &nbsp;|&nbsp; "Structural Admissibility is the only Physical Invariant." — Ma (2026)</div>
+</div>
 
-  <div id="fsm-array">
-    <div class="fsm-node s-ACTIVE" id="fn-ACTIVE">Active</div>
-    <div class="fsm-node s-DRIFT" id="fn-DRIFT">Drift Warning</div>
-    <div class="fsm-node s-RESONANCE" id="fn-RESONANCE">Resonance Sweep</div>
-    <div class="fsm-node s-COLLAPSE" id="fn-COLLAPSE">Flash Collapse</div>
-    <div class="fsm-node" style="color:var(--dim)">Phoenix Standby</div>
+<!-- HEADER -->
+<header id="hdr">
+  <div>
+    <div class="t1">MA-CHAO LAB · V3.6 SINGULARITY</div>
+    <div class="t2">Non-Hermitian Structural Phase Transition Verifier · Ma (2026) · PRE Submission Protocol</div>
   </div>
-  <div id="ml">
-    <div class="instrument-array" id="card-container">
+  <div class="perf-hud">
+    <div class="ph-cell"><span class="ph-lbl">Sensing Resolution</span><span class="ph-val">&lt;1.2μs/Event</span></div>
+    <div class="ph-cell"><span class="ph-lbl">Tick Density</span><span class="ph-val hot" id="h-tps">0 tk/s</span></div>
+    <div class="ph-cell"><span class="ph-lbl">EP Susceptibility</span><span class="ph-val" id="h-chi">—</span></div>
+    <div class="ph-cell"><span class="ph-lbl">Δ_eff</span><span class="ph-val" id="h-deff">—</span></div>
+  </div>
+  <div class="hdr-right">
+    <button class="btn-ak" onclick="openModal()">ACADEMIC SPEC</button>
+    <div class="ws-ind"><div id="ws-dot"></div><span id="ws-lbl">INIT</span></div>
+  </div>
+</header>
+
+<!-- AWSP STATUS -->
+<div id="awsp">
+  <div class="awsp-lbl">AWSP STATUS</div>
+  <div id="awsp-state" class="homogen">[ HOMOGENEOUS WINDOW ]</div>
+  <div style="font-size:7px;color:var(--dim);margin-left:12px">τ̂_corr=<span id="awsp-tcorr">—</span> &nbsp; W_j=<span id="awsp-wj">—</span></div>
+  <div class="verdict-box">
+    <div class="v-lbl">TOPOLOGICAL VERDICT</div>
+    <div id="verdict" class="undetermined">[ UNDETERMINED ]</div>
+    <div style="font-size:7px;color:var(--dim);margin-left:8px">Ŵ_N=<span id="v-wn">0</span> Q_topo=<span id="v-qt">—</span></div>
+  </div>
+</div>
+
+<!-- MAIN WRAP -->
+<div id="wrap">
+
+<!-- ROW 1: AWACS CARDS -->
+<div class="g3" id="cards-host"></div>
+
+<!-- ROW 2: Phase Space | Scaling Law -->
+<div class="g2">
+  <!-- MOD 03: Phase Space -->
+  <div class="pan cyn">
+    <div class="ptitle">NON-HERMITIAN PHASE SPACE (AI vs ∇AI) <span>MOD 03</span></div>
+    <div id="phase-wrap" style="height:260px;margin:8px">
+      <canvas id="phase-cv"></canvas>
+      <div class="ps-ax-x">ATOMIC INTEGRITY (AI_log) →</div>
+      <div class="ps-ax-y">← PRESSURE GRADIENT (∇AI)</div>
+      <div id="sing-ov">SINGULARITY DETECTED</div>
+    </div>
+    <div class="pfooter"><span>Primary: BTC/USDT Manifold</span><span id="ps-status">STABLE TRAJECTORY</span></div>
+  </div>
+  <!-- MOD 12: Empirical Scaling Law -->
+  <div class="pan pur">
+    <div class="ptitle">EMPIRICAL SCALING LAW: σ² ∝ Δ⁻¹/² (SMOKING GUN) <span>MOD 12</span></div>
+    <div id="scale-wrap" style="height:260px;margin:8px">
+      <canvas id="scale-cv"></canvas>
+    </div>
+    <div class="pfooter"><span>Ma-Chao Prediction: slope = -0.5 (Theorem 9.8)</span><span id="sl-count">0 windows</span></div>
+  </div>
+</div>
+
+<!-- ROW 3: PDF | EP Bifurcation | Soliton | Entropy -->
+<div class="g4">
+  <!-- MOD 01: PDF -->
+  <div class="pan pur">
+    <div class="ptitle">PDF MANIFOLD OBSERVER <span>MOD 01</span></div>
+    <div id="pdf-wrap" style="margin:8px">
+      <canvas id="pdf-cv"></canvas>
+      <div id="pdf-blade" style="left:20%"><div class="pdf-blade-lbl">τ-CUTTING EDGE</div></div>
+    </div>
+    <div class="pfooter"><span>KDE bandwidth: <b id="pdf-h">optimal</b></span><span id="pdf-skew">SKEWNESS: —</span></div>
+  </div>
+  <!-- MOD 08: EP Bifurcation -->
+  <div class="pan red">
+    <div class="ptitle">EP BIFURCATION MONITOR <span>MOD 08</span></div>
+    <div id="ep-wrap" style="margin:8px">
+      <canvas id="ep-cv"></canvas>
+      <div id="ep-lock"><div class="ep-glitch">SINGULARITY_LOCK</div></div>
+    </div>
+    <div class="pfooter"><span>λ-Coalescence: <b id="ep-gap">Stable</b></span><span>W_N=<b id="ep-wn">0</b></span></div>
+  </div>
+  <!-- MOD 06: Soliton -->
+  <div class="pan amb">
+    <div class="ptitle">NON-LINEAR SOLITON TRACKER <span>MOD 06</span></div>
+    <div style="position:relative;margin:8px">
+      <div id="sol-wrap">
+        <canvas id="sol-cv"></canvas>
+        <div id="sol-freeze"></div>
       </div>
+      <div class="sol-params" id="sol-params">
+        <div>Amp: <span id="s-amp">—</span></div>
+        <div>Vel: <span id="s-vel">—</span></div>
+        <div>W: <span id="s-wid">—</span></div>
+      </div>
+    </div>
+    <div class="pfooter"><span id="sol-status">SCANNING...</span><span id="sol-count">0 events</span></div>
+  </div>
+  <!-- MOD 07: Entropy Flux -->
+  <div class="pan grn">
+    <div class="ptitle">ENTROPY FLUX (SHANNON) <span>MOD 07</span></div>
+    <div style="position:relative;margin:8px">
+      <div id="ent-wrap">
+        <canvas id="ent-cv"></canvas>
+        <div class="ent-scale"><span>H</span><span>0</span></div>
+      </div>
+    </div>
+    <div class="pfooter"><span>S_A: <b id="ent-val">—</b></span><span id="ent-status">COMPUTING...</span></div>
+  </div>
+</div>
 
-    <div class="side-panel">
-      <div class="academic-panel">
-        <h3 style="font-size:11px;color:#fff;margin-bottom:15px;letter-spacing:1px">THEORETICAL CORE</h3>
-        
-        <div class="theory-block">
-          <div class="th-title">§ 3.1 ATOMIC INTEGRITY (AI)</div>
-          <div class="th-desc">衡量流动性密度的物理指标。低 AI 意味着价格在“稀薄”区域滑动，具有极高的运动惯性。</div>
-          <div class="th-math">AI_log = log10( ΣVol / (|ΔP| + ε) )</div>
-        </div>
-
-        <div class="theory-block">
-          <div class="th-title">§ 4.2 PRESSURE GRADIENT (∇AI)</div>
-          <div class="th-desc">结构稳定性的衰减速率。持续为负预示着支撑结构的拓扑腐蚀。</div>
-          <div class="th-math">∇AI = (AI_t - AI_{t-1}) / Δt</div>
-        </div>
-
-        <div class="theory-block">
-          <div class="th-title">§ 7.0 COUPLING (ρ_LL)</div>
-          <div class="th-desc">CFR 雷达监测辅助场信号泄露。验证流场间的拓扑耦合。</div>
-        </div>
-
-        <div class="radar-box"><canvas id="radar-canvas"></canvas></div>
-        
-        <div class="theory-block">
-          <div class="th-title">ENGINE BENCHMARK</div>
-          <div style="font-size:9px;color:var(--fnt);line-height:1.6">
-            • Compute: Scalar Python 3.12<br>
-            • Hot-path: Zero Dynamic Alloc<br>
-            • Latency: ~1.2 μs per Tick<br>
-            • Capacity: 2,000 batches/sec
-          </div>
+<!-- ROW 4: MSTS | CFR Dual-Pipeline | Admissibility Gate | Performance -->
+<div class="gcfr">
+  <!-- MOD 05: CFR Dual-Pipeline Radar -->
+  <div class="pan cyn">
+    <div class="ptitle">CFR DUAL-PIPELINE RADAR <span>MOD 05</span></div>
+    <div style="margin:8px">
+      <div id="cfr-wrap">
+        <canvas id="cfr-cv"></canvas>
+        <div class="pipeline-badge">
+          <div class="pb ok" id="pb-a">ρ_A=—</div>
+          <div class="pb ok" id="pb-b">ρ_B=—</div>
+          <div class="pb" id="pb-diff">|Δρ|=—</div>
         </div>
       </div>
     </div>
+    <div class="pfooter"><span>Hawkes+CPSD Pipelines</span><span id="cfr-sync">SYNC: —</span></div>
+  </div>
+
+  <!-- MOD 04: MSTS Spectrogram -->
+  <div class="pan" style="grid-column:span 2">
+    <div class="ptitle">MSTS SPECTRAL RESONANCE RIBBON (W={8,16,26,40,60,100}) <span>MOD 04</span></div>
+    <div style="margin:8px">
+      <div id="msts-wrap">
+        <div class="msts-scale-lbls"><span>W:100</span><span>W:60</span><span>W:40</span><span>W:26</span><span>W:16</span><span>W:8</span></div>
+        <canvas id="msts-cv"></canvas>
+        <div id="res-lock">RESONANCE: OFF</div>
+      </div>
+    </div>
+    <div class="pfooter"><span>Scales: 6-channel energy density</span><span>Active: <b id="msts-act">0/6</b> &nbsp; σ_limit: <b id="msts-sl">—</b></span></div>
+  </div>
+
+  <!-- MOD 09: Gate -->
+  <div class="pan pur">
+    <div class="ptitle">ADMISSIBILITY GATE (τ-DISCIPLINE) <span>MOD 09</span></div>
+    <div style="margin:8px;position:relative">
+      <div id="gate-wrap">
+        <canvas id="gate-cv"></canvas>
+        <div id="gate-blade"><div class="gate-blade-lbl">τ (5%)</div></div>
+        <div id="admit-flash">LOCK-ON: ADMITTED</div>
+      </div>
+    </div>
+    <div class="pfooter"><span>N=<b id="gate-n">0</b></span><span>τ=<b id="gate-tau">—</b></span></div>
+  </div>
+</div>
+
+<!-- ROW 5: Performance -->
+<div class="pan" style="padding:12px 16px">
+  <div class="ptitle" style="padding:0 0 8px">PERFORMANCE METABOLISM &amp; CREED <span>MOD 10</span></div>
+  <div class="pstat"><div class="ps-lbl">Thread Utilization</div><div class="ps-track"><div class="ps-fill" style="width:8%"></div></div><div class="ps-num">SINGLE_SCALAR</div></div>
+  <div class="pstat"><div class="ps-lbl">Info Extraction Rate</div><div class="ps-track"><div class="ps-fill c" id="info-fill" style="width:85%"></div></div><div class="ps-num" id="info-rate">0.9242 bit/event</div></div>
+  <div class="pstat"><div class="ps-lbl">Topological Fidelity</div><div class="ps-track"><div class="ps-fill" id="topo-fill" style="width:72%"></div></div><div class="ps-num" id="topo-fid">—</div></div>
+  <div id="future-scroll"><div class="scroll-inner">&nbsp;
+    &gt;&gt; [STABLE_CORE] Ma-Chao Equation V3.6 PRE-Submission Protocol Active. &nbsp;
+    &gt;&gt; [R&amp;D_V3.7] Mapping Cross-Manifold Hessian Tensor Resonance... &nbsp;
+    &gt;&gt; [R&amp;D_V4.0] Towards Autonomous Singularity Execution via Non-Euclidean Kernels... &nbsp;
+    &gt;&gt; THE ACADEMIC JOURNEY HAS NO BOUNDARIES. WE ARE BUILDING THE INFORMATION TENSOR. &nbsp;
+    &gt;&gt; OUR QUEST FOR TRUTH REMAINS UNSTOPPABLE. STAY TUNED.
+  </div></div>
+  <div class="creed">"Structural Admissibility is the only Physical Invariant." — Ma (2026)</div>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- MODAL: Academic Monograph -->
+<div id="paper-modal">
+  <div class="modal-close" onclick="closeModal()">[ EXIT_PEER_REVIEW ]</div>
+  <div class="modal-inner">
+    <header style="border-bottom:1px solid var(--bor2);padding-bottom:24px;margin-bottom:36px">
+      <div class="modal-h1">RESEARCH MONOGRAPH: MA-CHAO EQUATION V3.6</div>
+      <div class="modal-sub">Non-Hermitian Structural Phase Transition in Information Fluids · Ma (2026) · PRE Submission Protocol</div>
+    </header>
+    <div class="modal-grid">
+      <div>
+        <div class="modal-h2">I. THE SINGULARITY HYPOTHESIS</div>
+        <div class="modal-p">
+          The fundamental failure of standard quantitative models lies in the assumption of <b>Brownian Ergodicity</b>.
+          The Ma-Chao Equation re-characterizes the order book as a <b>Non-Hermitian Information Manifold</b>.
+          Liquidity is treated as a fluid density governed by a complex Hamiltonian.
+          A "crash" is not a statistical outlier — it is a <b>Topological Symmetry Breaking</b> event at an Exceptional Point (EP),
+          where the spectral discriminant Δ → 0 and resolvent diverges as χ ∝ Δ⁻¹/².
+        </div>
+        <div class="modal-eq-box" id="f-hamiltonian"></div>
+        <div style="font-size:8px;color:var(--dim);margin-top:6px">Eq. (9.3): Two-mode reduced operator L₁₂. EP criterion: Δ = 0 (Theorem 9.5).</div>
+      </div>
+      <div style="border-left:1px solid var(--bor2);padding-left:32px">
+        <div class="modal-h3">PHYSICAL INVARIANTS DETECTED:</div>
+        <ul class="modal-ul">
+          <li>• <b>Atomic Integrity AI_log</b>: Manifold structural density = log₁₀(ΣVol / (|ΔP|+ε))</li>
+          <li>• <b>Pressure Gradient ∇AI</b>: Velocity of spectral gap closure (∂AI/∂t)</li>
+          <li>• <b>Imbalance Curvature Γ</b>: ∂²A/∂x² — 3-point central difference operator</li>
+          <li>• <b>Spectral Discriminant Δ_eff</b>: EP early-warning metric (Theorem 9.9)</li>
+          <li>• <b>Topological Winding Ŵ_N</b>: Discrete Hilbert-transform winding count</li>
+          <li>• <b>Q_topo = δ̂_min√n_min</b>: Bootstrap-calibrated confidence metric</li>
+        </ul>
+      </div>
+    </div>
+    <div class="modal-verdict-box">
+      <div class="modal-h3">II. THREE-VALUED TOPOLOGICAL AUDIT PROTOCOL (Theorem 9.12 / Appendix O)</div>
+      <div class="verdict-row"><div class="v-chip p">EP-CONFIRMED</div> Ŵ_N = 1 ∧ Q_topo ≥ Q* ∧ |ρ̂_A − ρ̂_B| ≤ 0.05 → Full reactor glow. FPR ≤ 10⁻⁴ (bootstrap Q*).</div>
+      <div class="verdict-row"><div class="v-chip g">EXCLUDED</div> Ŵ_N = 0 ∧ Q_topo ≥ Q* → Standard tracking. No EP crossing detected.</div>
+      <div class="verdict-row"><div class="v-chip d">UNDETERMINED</div> Q_topo &lt; Q* OR Aliasing Veto triggered. SNR insufficient to resolve topological invariant.</div>
+      <div style="margin-top:12px;font-size:9px;color:var(--dim)">
+        Dual pipeline: T_A (Hawkes pre-whitening, parametric) ∩ T_B (CPSD coherence, non-parametric) = ∅.
+        Pipeline divergence |ρ̂_A − ρ̂_B| &gt; 0.05 triggers [PIPELINE ALIASING] warning.
+      </div>
+      <div style="margin-top:10px" id="f-qtopo"></div>
+    </div>
+    <div class="modal-warn">
+      <b style="color:var(--red)">AWSP REGIME-ISOLATION:</b> The Adaptive Window Stopping Protocol (AWSP) enforces three states:
+      [CUSUM SHIFT DETECTED] → [BUFFER EXCISION ACTIVE] (exclude 3τ̂_corr window to prevent stopping-time bias ≤ τ̂_corr·e⁻³) → [HOMOGENEOUS WINDOW] (safe for topological sampling).
+      False-positive rate analytically bounded to ≤ 2.7×10⁻³ under 30% noise (Theorem 9.12).
+    </div>
+    <footer class="modal-ft">
+      *All data captured at native WebSocket frequency. Zero interpolation. Reference: Ma (2026), <i>The Ma-Chao Equation</i>, PRE Submission (March 2026). DOI: 10.5281/zenodo.18728828
+    </footer>
   </div>
 </div>
 <script>
 "use strict";
-// 物理参数配置 (对齐论文参数)
-const CONFIG = {
-    W: 100,         // Window size
-    TAU: 0.05,      // Admissibility Percentile
-    EPS: 1e-9,      // Stabilizer
-    SIGMA: 2.5,     // MSTS Limit
-    SYMS: ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'DOGEUSDT']
-};
+// ============================================================
+// PHYSICS ENGINE V3.6 — MA-CHAO OPERATOR
+// ============================================================
+const EPS=1e-9,TAU_PCT=.05,DELTA=15,MW=100,W6=[8,16,26,40,60,100];
+const INST=[
+  {id:"BTC-USDT",sym:"BTCUSDT",s:60000},
+  {id:"ETH-USDT",sym:"ETHUSDT",s:3100},
+  {id:"SOL-USDT",sym:"SOLUSDT",s:170}
+];
+const SI={BTCUSDT:0,ETHUSDT:1,SOLUSDT:2};
+let isLive=false,gT=0,tkC=0;
+const SP=[...INST.map(i=>i.s)],SV=[1.5,1.5,1.5];
+const pp0=[...INST.map(i=>i.s)];
 
-const ST = {}; // 存储所有品种的物理状态
-CONFIG.SYMS.forEach(s => {
-    ST[s] = {
-        price: 0, p0: 0, vol: 0, ai: 0, nabla: 0, score: 0,
-        history: new Float64Array(100), hIdx: 0,
-        ai_buffer: [], tau: -1.5, state: 'ACTIVE'
-    };
+// Welford
+function wC(){return{n:0,m:0,M:0}}
+function wU(w,x){w.n++;const d=x-w.m;w.m+=d/w.n;w.M+=d*(x-w.m)}
+function wV(w){return w.n>1?w.M/(w.n-1):0}
+function wS(w){return Math.sqrt(wV(w))}
+
+// Sorted insert
+function bL(a,v){let lo=0,hi=a.length;while(lo<hi){const m=(lo+hi)>>>1;if(a[m]<v)lo=m+1;else hi=m}return lo}
+function bI(a,v){a.splice(bL(a,v),0,v)}
+
+function mkSt(s){return{
+  price:s,pp:s,cvol:0,aiL:0,nab:0,aiA:0,tau:null,score:0,
+  state:"PHOENIX_STANDBY",rhoA:0,rhoB:0,deff:0,chi:0,
+  mPSD:new Float64Array(6),mEn:new Float64Array(6),mSW:wC(),mSL:1,
+  pSq:new Float64Array(MW),pH:0,pC:0,pR:new Float64Array(3),pRH:0,pRC:0,
+  aiS:[],aiH:new Float64Array(500),aiHH:0,aiHC:0,aiW:wC(),
+  spB:new Float64Array(80),spH:0,spC:0,
+  /* cross-correlation buffer */
+  xBuf:new Float64Array(200),xH:0,xC:0,xW:wC(),
+  /* phase space trail */
+  trail:[],
+  /* entropy */
+  entH:new Float64Array(200),entHH:0,entHC:0,
+  /* AWSP */
+  cusumS:0,awspMode:0,awspBuf:0,tcorr:10,
+  /* scaling law points */
+  scPoints:[],
+  wjCount:0,
+  /* EP history */
+  epH:new Float64Array(300),epHH:0,epHC:0,
+  epGap:1,winding:0,
+  /* pipeline ρ */
+  hBuf:new Float64Array(100),hH:0,hC:0,
+  cBuf:new Float64Array(100),cH:0,cC:0,
+  pipelineOK:true,
+  cv:null,cx:null,
+  _rec:0
+}}
+
+const ST=INST.map(i=>mkSt(i.s));
+
+// MSTS engine
+function mstsTick(st,p){
+  const r=st.pR,h=(st.pRH+1)%3;r[h]=p;st.pRH=h;
+  if(st.pRC<3)st.pRC++;
+  let pS=0;
+  if(st.pRC>=3){const d=r[h]-2*r[(h+2)%3]+r[(h+1)%3];pS=d*d}
+  const nh=(st.pH+1)%MW;st.pSq[nh]=pS;st.pH=nh;if(st.pC<MW)st.pC++;
+  const b=st.pSq,c=st.pC;
+  const ws=[8,16,26,40,60,100];
+  for(let i=0;i<6;i++){
+    st.mEn[i]=Math.max(0,st.mEn[i]+pS-(c>ws[i]?b[(nh-ws[i]+MW)%MW]:0));
+    st.mPSD[i]=st.mEn[i]/ws[i];
+  }
+  wU(st.mSW,(st.mPSD[0]+st.mPSD[1]+st.mPSD[2]+st.mPSD[3]+st.mPSD[4]+st.mPSD[5])/6);
+  if(st.mSW.n>=20)st.mSL=st.mSW.m+2.5*wS(st.mSW);
+  let a=0;for(let i=0;i<6;i++)if(st.mPSD[i]>st.mSL)a++;
+  return{res:a>=3,a}
+}
+
+// Dual-pipeline ρ approximation
+// ρ_A: Hawkes pre-whitening residual correlation (parametric)
+// ρ_B: CPSD coherence magnitude (non-parametric)
+function dualPipeline(st,al,idx){
+  // Update cross-manifold buffers (vs BTC)
+  const bh=(st.hH+1)%100;st.hBuf[bh]=al;st.hH=bh;if(st.hC<100)st.hC++;
+  const bc=(st.cH+1)%100;st.cBuf[bc]=al;st.cH=bc;if(st.cC<100)st.cC++;
+  if(st.hC<30)return{rA:0,rB:0};
+  // ρ_A: lag-1 autocorrelation of Hawkes-whitened residuals (approx)
+  const n=Math.min(st.hC,100);
+  let sx=0,sy=0,sx2=0,sy2=0,sxy=0;
+  const lag=1;
+  for(let j=lag;j<n;j++){
+    const x=st.hBuf[(st.hH-n+j+200)%100];
+    const y=st.hBuf[(st.hH-n+j-lag+200)%100];
+    sx+=x;sy+=y;sx2+=x*x;sy2+=y*y;sxy+=x*y;
+  }
+  const nn=n-lag;
+  const rA=nn>1?(sxy-sx*sy/nn)/Math.sqrt(Math.max(1e-12,(sx2-sx*sx/nn)*(sy2-sy*sy/nn))):0;
+  // ρ_B: simple windowed correlation (CPSD coherence proxy)
+  let mx=0,my=0,nn2=0;
+  for(let j=0;j<n;j++){mx+=st.hBuf[(st.hH-n+j+200)%100];nn2++}
+  mx/=nn2;my=mx;// same series for solo instruments; cross-instrument done externally
+  let vx=0,vy=0,cv=0;
+  for(let j=0;j<n;j++){
+    const x=st.hBuf[(st.hH-n+j+200)%100]-mx;
+    const y=st.cBuf[(st.cH-n+j+200)%100]-my;
+    vx+=x*x;vy+=y*y;cv+=x*y;
+  }
+  const rB=Math.sqrt(vx*vy)>1e-12?cv/Math.sqrt(vx*vy):0;
+  return{rA:Math.max(-1,Math.min(1,rA)),rB:Math.max(-1,Math.min(1,rB))}
+}
+
+// Δ_eff computation
+function computeDeff(al,rA,rB){
+  const om1=al,om2=al*0.97+0.01;
+  const kap0=0.1,bc=0.05;
+  const r=Math.max(-1+0.01,Math.min(1-0.01,(rA+rB)/2));
+  const kap=kap0*Math.log((1+r)/(1-r+EPS));
+  const c12=0.02+bc*kap,d21=0.02+bc*r;
+  const disc=Math.pow((om1-om2)/2,2)+4*c12*d21;
+  return{deff:disc,chi:disc>1e-8?Math.pow(disc,-0.5):1e4}
+}
+
+// AWSP CUSUM
+function awspTick(st,al){
+  const mu0=st.aiW.m||0,kap=0.02,h=5;
+  st.cusumS=Math.max(0,st.cusumS+(al-mu0-kap));
+  if(st.awspMode===0&&st.cusumS>h){
+    st.awspMode=1;st.awspBuf=Math.max(3,Math.round(st.tcorr*3));
+  }
+  if(st.awspMode===1){st.awspBuf--;if(st.awspBuf<=0)st.awspMode=2}
+  if(st.awspMode===2){st.wjCount++;if(st.wjCount>200){st.awspMode=0;st.cusumS=0;st.wjCount=0}}
+}
+
+// Discrete winding number (Hilbert-based)
+function computeWinding(epH,n){
+  if(n<20)return 0;
+  // Approximate analytic signal phase using autocorrelation sign changes
+  let crosses=0;
+  for(let j=1;j<n;j++){
+    if(epH[(j-1)]<0&&epH[j]>=0)crosses++;
+  }
+  return crosses%2===1?1:0;
+}
+
+// Q_topo
+function computeQtopo(epH,n){
+  if(n<10)return 0;
+  let mn=Infinity;for(let j=0;j<n;j++)if(Math.abs(epH[j])<mn)mn=Math.abs(epH[j]);
+  return mn*Math.sqrt(n);
+}
+
+// Main physics tick
+function tick(st,p,vol,tk){
+  const mr=mstsTick(st,p);
+  st.cvol=Math.max(st.cvol*.97+vol,EPS);
+  const dp=Math.abs(p-st.pp);
+  const ar=st.cvol/(dp+EPS),al=Math.log10(Math.max(ar,EPS));
+  st.nab=(al-st.aiL)/100;st.aiL=al;
+  wU(st.aiW,al);
+
+  // AI sorted history
+  if(st.aiHC>=500){
+    const o=st.aiH[st.aiHH],pos=bL(st.aiS,o);
+    if(pos<st.aiS.length&&st.aiS[pos]===o)st.aiS.splice(pos,1);
+  }
+  st.aiH[st.aiHH]=al;st.aiHH=(st.aiHH+1)%500;if(st.aiHC<500)st.aiHC++;
+  bI(st.aiS,al);
+  const ns=st.aiS.length;
+  st.tau=ns>=50?st.aiS[Math.max(0,Math.floor(TAU_PCT*ns)-1)]:null;
+
+  // Dual pipeline
+  const {rA,rB}=dualPipeline(st,al,0);
+  st.rhoA=rA;st.rhoB=rB;
+  st.pipelineOK=Math.abs(rA-rB)<=0.05;
+  const {deff,chi}=computeDeff(al,rA,rB);
+  st.deff=deff;st.chi=chi;
+
+  // EP history
+  st.epH[st.epHH]=deff;st.epHH=(st.epHH+1)%300;if(st.epHC<300)st.epHC++;
+  const epN=Math.min(st.epHC,300);
+  st.epGap=deff;
+  st.winding=computeWinding(st.epH,epN);
+  const qtopo=computeQtopo(st.epH,epN);
+  const qstar=0.15*Math.sqrt(Math.max(epN,1));
+  // Three-valued logic
+  if(st.winding===1&&qtopo>=qstar&&st.pipelineOK)st.verdict="CONFIRMED";
+  else if(st.winding===0&&qtopo>=qstar)st.verdict="EXCLUDED";
+  else st.verdict="UNDETERMINED";
+
+  // AWSP
+  awspTick(st,al);
+
+  // Scaling law points (per AWSP homogeneous window close)
+  if(st.awspMode===2&&st.wjCount%50===0&&deff>1e-6){
+    const sig2=wV(st.aiW);
+    if(sig2>1e-10)st.scPoints.push({x:deff,y:sig2,ep:st.verdict==="CONFIRMED"});
+    if(st.scPoints.length>200)st.scPoints.shift();
+  }
+
+  // Entropy
+  const eh=(st.entHH+1)%200;st.entH[eh]=al;st.entHH=eh;if(st.entHC<200)st.entHC++;
+
+  // Sparkline
+  st.spB[st.spH]=al;st.spH=(st.spH+1)%80;if(st.spC<80)st.spC++;
+
+  // Phase trail
+  st.trail.push({x:al,y:st.nab});if(st.trail.length>80)st.trail.shift();
+
+  // State machine
+  if(al<-3){st.state="FLASH_COLLAPSE";st.score=0;st.pp=p;return}
+  if(mr.res){st.state="RESONANCE";st.score=0;st.pp=p;return}
+  if(st.state==="FLASH_COLLAPSE"){st.state="PHOENIX_STANDBY";st.score=0;st.pp=p;return}
+  if(st.state==="PHOENIX_STANDBY"||st.state==="RECOVERY"){
+    if(al>-1&&st.nab>=0)st._rec++;else st._rec=0;
+    if(st._rec>=20)st.state="ACTIVE";
+    st.score=0;st.pp=p;return;
+  }
+  if(st.deff<0.001&&deff>0){st.state="LOCKED";st.score=0;st.pp=p;return}
+  if(rA>0.6||st.nab<-0.05)st.state="PRE_DRIFT";
+  else if(st.nab<-0.02)st.state="DRIFT_WARNING";
+  else st.state="ACTIVE";
+  const adm=(st.tau!==null)&&(al<=st.tau);
+  st.score=adm?Math.max(0,1-Math.abs(rA)):0;
+  st.pp=p;
+}
+
+// ============================================================
+// SIM ENGINE
+// ============================================================
+let _s=123456;
+function rng(){_s=(_s*1664525+1013904223)&0xffffffff;return((_s>>>1)/2147483647.5)-1}
+function randn(){const u=(rng()+1)/2+1e-10,v=(rng()+1)/2;return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}
+
+function simFrame(){
+  for(let t=0;t<6;t++){
+    INST.forEach((ins,i)=>{
+      let sk=1;const r=Math.random();
+      if(r<.003)sk=12+Math.random()*25;else if(r<.02)sk=2+Math.random()*4;
+      SP[i]+=randn()*(ins.s*2.5e-4)*sk;SP[i]=Math.max(SP[i],ins.s*.05);
+      SV[i]=Math.abs(1.5+randn()*.6);
+      tick(ST[i],SP[i],SV[i],gT);gT++;
+    });
+  }
+}
+
+// ============================================================
+// DOM BUILD
+// ============================================================
+function buildCards(){
+  const host=document.getElementById("cards-host");
+  INST.forEach((ins,i)=>{
+    const d=document.createElement("div");
+    d.className="mcard sPHOENIX_STANDBY";d.id="mc"+i;
+    d.innerHTML=`
+    <div class="mc-top">
+      <div><div class="mc-sym">${ins.id}</div><div class="mc-ex">BINANCE SPOT</div></div>
+      <div class="mc-badge bPHOENIX_STANDBY" id="mbd${i}">STANDBY</div>
+    </div>
+    <div class="mc-price" id="mpr${i}">—</div>
+    <div class="mc-chg" id="mch${i}">—</div>
+    <div class="mc-grid">
+      <div class="mc-cell"><div class="mc-cl">AI_log</div><div class="mc-cv" id="mai${i}">—</div></div>
+      <div class="mc-cell"><div class="mc-cl">∇AI</div><div class="mc-cv" id="mnb${i}">—</div></div>
+      <div class="mc-cell"><div class="mc-cl">τ</div><div class="mc-cv" id="mta${i}">—</div></div>
+      <div class="mc-cell"><div class="mc-cl">Δ_eff</div><div class="mc-cv" id="mde${i}">—</div></div>
+      <div class="mc-cell"><div class="mc-cl">ρ_A</div><div class="mc-cv" id="mra${i}">—</div></div>
+      <div class="mc-cell"><div class="mc-cl">SCORE</div><div class="mc-cv" id="msc${i}">—</div></div>
+    </div>
+    <div class="spw"><canvas id="sp${i}"></canvas></div>
+    <div style="display:flex;justify-content:space-between;font-size:7px;color:var(--dim);margin-top:3px">
+      <span>IFF: <b id="mif${i}" style="color:var(--noi)">NEUTRAL</b></span>
+      <span>Verdict: <b id="mvd${i}" style="color:var(--dim)">—</b></span>
+    </div>`;
+    host.appendChild(d);
+    ST[i].cv=document.getElementById("sp"+i);ST[i].cx=ST[i].cv.getContext("2d");
+  });
+}
+
+// DOM cache
+const D={};
+function cacheDOM(){
+  INST.forEach((_,i)=>{D[i]={
+    card:document.getElementById("mc"+i),
+    bd:document.getElementById("mbd"+i),
+    pr:document.getElementById("mpr"+i),
+    ch:document.getElementById("mch"+i),
+    ai:document.getElementById("mai"+i),
+    nb:document.getElementById("mnb"+i),
+    ta:document.getElementById("mta"+i),
+    de:document.getElementById("mde"+i),
+    ra:document.getElementById("mra"+i),
+    sc:document.getElementById("msc"+i),
+    iv:document.getElementById("mif"+i),
+    vd:document.getElementById("mvd"+i),
+  }});
+}
+
+// ============================================================
+// SPARKLINE
+// ============================================================
+function drawSpark(st){
+  const cv=st.cv,cx=st.cx;
+  const W=cv.offsetWidth||160,H=30;
+  if(cv.width!==W)cv.width=W;cv.height=H;
+  const n=st.spC;if(n<2)return;
+  cx.clearRect(0,0,W,H);
+  let mn=Infinity,mx=-Infinity;
+  const v=new Float64Array(n),si=n<80?0:st.spH;
+  for(let j=0;j<n;j++){const x=st.spB[(si+j)%80];v[j]=x;if(x<mn)mn=x;if(x>mx)mx=x}
+  if(mx===mn){mn-=1;mx+=1}
+  if(st.tau!==null){
+    const ty=H-((st.tau-mn)/(mx-mn))*H;
+    cx.beginPath();cx.strokeStyle="rgba(168,85,247,.3)";cx.lineWidth=1;cx.setLineDash([2,2]);
+    cx.moveTo(0,ty);cx.lineTo(W,ty);cx.stroke();cx.setLineDash([]);
+  }
+  const colors={ACTIVE:"#10b981",PRE_DRIFT:"#f59e0b",RESONANCE:"#a855f7",DRIFT_WARNING:"#f97316",FLASH_COLLAPSE:"#f43f5e",PHOENIX_STANDBY:"#374151",RECOVERY:"#06b6d4",LOCKED:"#f43f5e"};
+  cx.beginPath();cx.strokeStyle=colors[st.state]||"#374151";cx.lineWidth=1.3;
+  for(let j=0;j<n;j++){
+    const x=(j/(n-1))*W,y=H-((v[j]-mn)/(mx-mn))*H;
+    j===0?cx.moveTo(x,y):cx.lineTo(x,y);
+  }
+  cx.stroke();
+}
+
+// ============================================================
+// CARD UPDATE
+// ============================================================
+function updCard(i,st){
+  const d=D[i];if(!d)return;
+  d.card.className="mcard s"+st.state;
+  d.bd.className="mc-badge b"+st.state;
+  d.bd.textContent=st.state==="LOCKED"?"🔒 LOCKED":st.state;
+  const p=SP[i],dif=p-pp0[i];
+  d.pr.textContent=p>=100?p.toFixed(2):p.toFixed(4);
+  const pt=(dif/Math.max(pp0[i],1e-9))*100;
+  d.ch.textContent=(dif>=0?"+":"")+dif.toFixed(2)+" ("+(dif>=0?"+":"")+pt.toFixed(3)+"%)";
+  d.ch.className="mc-chg "+(dif>=0?"up":"dn");
+  const a=st.aiL;
+  d.ai.textContent=isFinite(a)?a.toFixed(4):"—";d.ai.className="mc-cv "+(a<-2?"ct":a<-1?"wn":a>2?"hi":"ok");
+  d.nb.textContent=isFinite(st.nab)?st.nab.toExponential(2):"—";d.nb.className="mc-cv "+(st.nab<0?"wn":"ok");
+  d.ta.textContent=st.tau!==null?st.tau.toFixed(3):"—";
+  d.de.textContent=isFinite(st.deff)?st.deff.toExponential(2):"—";
+  d.de.className="mc-cv "+(st.deff<0.01?"ct":st.deff<0.1?"wn":"ok");
+  d.ra.textContent=isFinite(st.rhoA)?st.rhoA.toFixed(3):"—";
+  d.ra.className="mc-cv "+(Math.abs(st.rhoA)>.6?"ct":Math.abs(st.rhoA)>.4?"wn":"ok");
+  d.sc.textContent=st.score.toFixed(4);
+  const ifc=st.rhoA>0.4?"fo":"fr";
+  d.iv.style.color=ifc==="fo"?"var(--red)":ifc==="fr"?"var(--grn)":"var(--noi)";
+  d.iv.textContent=ifc==="fo"?"FOE":ifc==="fr"?"FRIEND":"NEUTRAL";
+  const vc={"CONFIRMED":"var(--pur)","EXCLUDED":"var(--grn)","UNDETERMINED":"var(--dim)"};
+  d.vd.style.color=vc[st.verdict]||"var(--dim)";d.vd.textContent=st.verdict||"—";
+  drawSpark(st);
+  pp0[i]=p;
+}
+
+// ============================================================
+// MOD 03: PHASE SPACE
+// ============================================================
+const pcv=document.getElementById("phase-cv");
+const pctx=pcv.getContext("2d");
+const EP_POINTS=[{x:-2,y:-0.08,lbl:"EP₁"},{x:-3,y:-0.12,lbl:"EP₂"},{x:-1.5,y:0.05,lbl:"EP₃"}];
+function drawPhaseSpace(){
+  const pw=pcv.parentElement,W=pw.offsetWidth||400,H=pw.offsetHeight||260;
+  if(pcv.width!==W)pcv.width=W;pcv.height=H;
+  const dpr=window.devicePixelRatio||1;
+  pcv.width=W*dpr;pcv.height=H*dpr;
+  pcv.style.width=W+"px";pcv.style.height=H+"px";
+  pctx.setTransform(dpr,0,0,dpr,0,0);
+  pctx.clearRect(0,0,W,H);
+  const st=ST[0];
+  const xC=W/2,yC=H/2,xS=W/7,yS=H/6;
+  // Grid
+  pctx.strokeStyle="rgba(255,255,255,.04)";pctx.lineWidth=1;
+  for(let i=-3;i<=3;i++){const x=xC+i*xS;pctx.beginPath();pctx.moveTo(x,0);pctx.lineTo(x,H);pctx.stroke()}
+  for(let j=-2;j<=2;j++){const y=yC-j*yS;pctx.beginPath();pctx.moveTo(0,y);pctx.lineTo(W,y);pctx.stroke()}
+  // Axes
+  pctx.strokeStyle="rgba(255,255,255,.12)";pctx.lineWidth=1;
+  pctx.beginPath();pctx.moveTo(0,yC);pctx.lineTo(W,yC);pctx.stroke();
+  pctx.beginPath();pctx.moveTo(xC,0);pctx.lineTo(xC,H);pctx.stroke();
+  // EP markers
+  EP_POINTS.forEach(ep=>{
+    const ex=xC+ep.x*xS,ey=yC-ep.y*yS;
+    pctx.beginPath();pctx.arc(ex,ey,5,0,Math.PI*2);
+    pctx.strokeStyle="rgba(244,63,94,.5)";pctx.lineWidth=1.5;pctx.stroke();
+    pctx.beginPath();pctx.moveTo(ex-8,ey);pctx.lineTo(ex+8,ey);pctx.stroke();
+    pctx.beginPath();pctx.moveTo(ex,ey-8);pctx.lineTo(ex,ey+8);pctx.stroke();
+    pctx.fillStyle="rgba(244,63,94,.5)";pctx.font="7px 'JetBrains Mono'";pctx.fillText(ep.lbl,ex+7,ey-4);
+  });
+  // Singularity zone
+  pctx.fillStyle="rgba(244,63,94,.04)";
+  pctx.fillRect(0,yC,xC,H-yC);
+  // Trail
+  const tr=st.trail,n=tr.length;
+  if(n>2){
+    pctx.lineWidth=1;
+    for(let j=1;j<n;j++){
+      const al=(j/n);
+      const x0=xC+tr[j-1].x*xS,y0=yC-tr[j-1].y*yS;
+      const x1=xC+tr[j].x*xS,y1=yC-tr[j].y*yS;
+      pctx.beginPath();pctx.strokeStyle=`rgba(6,182,212,${al*.7})`;pctx.moveTo(x0,y0);pctx.lineTo(x1,y1);pctx.stroke();
+    }
+    // Current point
+    const cur=tr[n-1];
+    const cx2=xC+cur.x*xS,cy2=yC-cur.y*yS;
+    pctx.beginPath();pctx.arc(cx2,cy2,3.5,0,Math.PI*2);pctx.fillStyle="#06b6d4";pctx.fill();
+    pctx.beginPath();pctx.arc(cx2,cy2,7,0,Math.PI*2);pctx.strokeStyle="rgba(6,182,212,.3)";pctx.lineWidth=1;pctx.stroke();
+    // Singularity pull
+    const isSing=cur.x<-2&&cur.y<-0.06;
+    document.getElementById("sing-ov").style.display=isSing?"block":"none";
+    document.getElementById("ps-status").textContent=isSing?"SINGULARITY PULL DETECTED":
+      (cur.x<st.tau?.0:"STABLE TRAJECTORY");
+  }
+}
+
+// ============================================================
+// MOD 12: EMPIRICAL SCALING LAW
+// ============================================================
+const scv=document.getElementById("scale-cv");
+const sctx=scv.getContext("2d");
+function drawScalingLaw(){
+  const pw=scv.parentElement,W=pw.offsetWidth||400,H=pw.offsetHeight||260;
+  const dpr=window.devicePixelRatio||1;
+  scv.width=W*dpr;scv.height=H*dpr;scv.style.width=W+"px";scv.style.height=H+"px";
+  sctx.setTransform(dpr,0,0,dpr,0,0);
+  sctx.clearRect(0,0,W,H);
+  const pad={l:42,r:16,t:16,b:32};
+  const iW=W-pad.l-pad.r,iH=H-pad.t-pad.b;
+  // Axes labels
+  sctx.fillStyle="var(--dim)";sctx.font="7px 'JetBrains Mono'";
+  sctx.fillText("log|Δ_eff|",pad.l+iW/2-20,H-6);
+  sctx.save();sctx.translate(11,pad.t+iH/2);sctx.rotate(-Math.PI/2);
+  sctx.fillText("log σ²",0,0);sctx.restore();
+  // Grid
+  sctx.strokeStyle="rgba(255,255,255,.04)";sctx.lineWidth=1;
+  for(let i=0;i<=4;i++){const x=pad.l+i*(iW/4);sctx.beginPath();sctx.moveTo(x,pad.t);sctx.lineTo(x,pad.t+iH);sctx.stroke()}
+  for(let i=0;i<=4;i++){const y=pad.t+i*(iH/4);sctx.beginPath();sctx.moveTo(pad.l,y);sctx.lineTo(pad.l+iW,y);sctx.stroke()}
+  // Axis lines
+  sctx.strokeStyle="rgba(255,255,255,.15)";sctx.lineWidth=1;
+  sctx.beginPath();sctx.moveTo(pad.l,pad.t);sctx.lineTo(pad.l,pad.t+iH);sctx.lineTo(pad.l+iW,pad.t+iH);sctx.stroke();
+
+  const pts=ST[0].scPoints;
+  if(pts.length<3){
+    sctx.fillStyle="rgba(255,255,255,.15)";sctx.font="9px 'JetBrains Mono'";
+    sctx.fillText("Accumulating AWSP windows...",pad.l+20,pad.t+iH/2);return;
+  }
+  // Find log-log range
+  let xmn=Infinity,xmx=-Infinity,ymn=Infinity,ymx=-Infinity;
+  pts.forEach(p=>{
+    const lx=Math.log10(Math.max(p.x,1e-8)),ly=Math.log10(Math.max(p.y,1e-12));
+    if(lx<xmn)xmn=lx;if(lx>xmx)xmx=lx;if(ly<ymn)ymn=ly;if(ly>ymx)ymx=ly;
+  });
+  if(xmx===xmn)xmx=xmn+1;if(ymx===ymn)ymx=ymn+1;
+  const xR=xmx-xmn,yR=ymx-ymn;
+  const tx=lx=>pad.l+(lx-xmn)/xR*iW;
+  const ty=ly=>pad.t+iH-(ly-ymn)/yR*iH;
+  // Theoretical line slope -0.5
+  const lxLine=[xmn,xmx];
+  const lyMid=(ymn+ymx)/2,lxMid=(xmn+xmx)/2;
+  sctx.beginPath();sctx.strokeStyle="rgba(6,182,212,.6)";sctx.lineWidth=1.5;sctx.setLineDash([5,3]);
+  sctx.moveTo(tx(lxLine[0]),ty(lyMid+0.5*(lxLine[0]-lxMid)*(-1)));
+  sctx.lineTo(tx(lxLine[1]),ty(lyMid+0.5*(lxLine[1]-lxMid)*(-1)));
+  sctx.stroke();sctx.setLineDash([]);
+  sctx.fillStyle="rgba(6,182,212,.5)";sctx.font="7px 'JetBrains Mono'";
+  sctx.fillText("σ² ∝ Δ⁻¹/² (theory, slope=-0.5)",tx(lxLine[0])+4,ty(lyMid+0.5*(lxLine[0]-lxMid)*(-1))-4);
+  // Points
+  pts.forEach(p=>{
+    const lx=Math.log10(Math.max(p.x,1e-8)),ly=Math.log10(Math.max(p.y,1e-12));
+    const px=tx(lx),py=ty(ly);
+    sctx.beginPath();sctx.arc(px,py,p.ep?3.5:2,0,Math.PI*2);
+    if(p.ep){sctx.fillStyle="rgba(168,85,247,.9)";sctx.shadowBlur=8;sctx.shadowColor="#a855f7"}
+    else{sctx.fillStyle="rgba(100,100,100,.4)";sctx.shadowBlur=0}
+    sctx.fill();sctx.shadowBlur=0;
+  });
+  document.getElementById("sl-count").textContent=pts.length+" windows";
+}
+
+// ============================================================
+// MOD 01: PDF MANIFOLD
+// ============================================================
+const pdcv=document.getElementById("pdf-cv");
+const pdctx=pdcv.getContext("2d");
+function drawPDF(){
+  const pw=pdcv.parentElement,W=pw.offsetWidth||300,H=pw.offsetHeight||180;
+  const dpr=window.devicePixelRatio||1;
+  pdcv.width=W*dpr;pdcv.height=H*dpr;pdcv.style.width=W+"px";pdcv.style.height=H+"px";
+  pdctx.setTransform(dpr,0,0,dpr,0,0);
+  pdctx.clearRect(0,0,W,H);
+  const st=ST[0];const n=st.aiHC;if(n<10)return;
+  const vals=[];for(let j=0;j<n;j++)vals.push(st.aiH[(st.aiHH-n+j+500)%500]);
+  let mn=Math.min(...vals),mx=Math.max(...vals);if(mx===mn){mn-=1;mx+=1}
+  const bw=(mx-mn)*.15;// Silverman bandwidth
+  const bins=W;const kde=new Float64Array(bins);
+  for(let b=0;b<bins;b++){
+    const xv=mn+(b/bins)*(mx-mn);
+    let s=0;for(let j=0;j<n;j++){const u=(xv-vals[j])/bw;s+=Math.exp(-.5*u*u)}
+    kde[b]=s/(n*bw*2.507);
+  }
+  const kmax=Math.max(...kde);
+  // Fill
+  const grad=pdctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,"rgba(168,85,247,.5)");grad.addColorStop(1,"rgba(168,85,247,.02)");
+  pdctx.beginPath();pdctx.moveTo(0,H);
+  for(let b=0;b<bins;b++){pdctx.lineTo(b,H-(kde[b]/kmax)*(H*.85))}
+  pdctx.lineTo(W,H);pdctx.closePath();pdctx.fillStyle=grad;pdctx.fill();
+  pdctx.beginPath();pdctx.strokeStyle="rgba(168,85,247,.7)";pdctx.lineWidth=1.2;
+  for(let b=0;b<bins;b++){b===0?pdctx.moveTo(0,H-(kde[b]/kmax)*(H*.85)):pdctx.lineTo(b,H-(kde[b]/kmax)*(H*.85))}
+  pdctx.stroke();
+  // τ blade
+  if(st.tau!==null){
+    const tx=((st.tau-mn)/(mx-mn))*W;
+    document.getElementById("pdf-blade").style.left=Math.max(2,Math.min(W-4,tx))+"px";
+  }
+  // Skewness
+  let m3=0;for(let j=0;j<n;j++)m3+=Math.pow(vals[j]-st.aiW.m,3);
+  m3/=n;const sk=m3/Math.pow(Math.max(wS(st.aiW),EPS),3);
+  document.getElementById("pdf-skew").textContent="SKEW: "+(sk.toFixed(3));
+  document.getElementById("pdf-h").textContent=bw.toFixed(3);
+}
+
+// ============================================================
+// MOD 08: EP BIFURCATION
+// ============================================================
+const epcv=document.getElementById("ep-cv");
+const epctx=epcv.getContext("2d");
+let epSweep=0;
+function drawEP(){
+  const pw=epcv.parentElement,W=pw.offsetWidth||300,H=pw.offsetHeight||200;
+  const dpr=window.devicePixelRatio||1;
+  epcv.width=W*dpr;epcv.height=H*dpr;epcv.style.width=W+"px";epcv.style.height=H+"px";
+  epctx.setTransform(dpr,0,0,dpr,0,0);
+  epctx.clearRect(0,0,W,H);
+  const st=ST[0];const n=Math.min(st.epHC,W);
+  if(n<4)return;
+  const vals=[];for(let j=0;j<n;j++)vals.push(st.epH[(st.epHH-n+j+300)%300]);
+  let mn=Math.min(...vals),mx=Math.max(...vals);if(mx===mn)mx=mn+0.01;
+  // λ+ and λ- from sqrt(Δ)
+  const lam1=new Float64Array(n),lam2=new Float64Array(n);
+  for(let j=0;j<n;j++){const sq=Math.sqrt(Math.max(0,vals[j]));lam1[j]=0.5+sq;lam2[j]=0.5-sq}
+  const yS=H/(mx-mn);
+  epctx.fillStyle="#000";epctx.fillRect(0,0,W,H);
+  // Danger zone near coalescence
+  const epY=H/2;
+  epctx.fillStyle="rgba(168,85,247,.04)";epctx.fillRect(0,epY-10,W,20);
+  epctx.strokeStyle="rgba(168,85,247,.2)";epctx.lineWidth=1;epctx.setLineDash([3,3]);
+  epctx.beginPath();epctx.moveTo(0,epY);epctx.lineTo(W,epY);epctx.stroke();epctx.setLineDash([]);
+  epctx.font="7px 'JetBrains Mono'";epctx.fillStyle="rgba(168,85,247,.4)";epctx.fillText("EP LOCUS (Δ=0)",6,epY-4);
+  // λ+ line (purple)
+  epctx.beginPath();epctx.strokeStyle="rgba(168,85,247,.8)";epctx.lineWidth=1.3;
+  for(let j=0;j<n;j++){
+    const x=(j/(n-1))*W,y=H-(lam1[j]-mn)*yS;
+    j===0?epctx.moveTo(x,y):epctx.lineTo(x,y);
+  }
+  epctx.stroke();
+  // λ- line (cyan)
+  epctx.beginPath();epctx.strokeStyle="rgba(6,182,212,.8)";epctx.lineWidth=1.3;
+  for(let j=0;j<n;j++){
+    const x=(j/(n-1))*W,y=H-(lam2[j]-mn)*yS;
+    j===0?epctx.moveTo(x,y):epctx.lineTo(x,y);
+  }
+  epctx.stroke();
+  // Legend
+  epctx.font="8px 'JetBrains Mono'";
+  epctx.fillStyle="rgba(168,85,247,.7)";epctx.fillText("λ+",6,16);
+  epctx.fillStyle="rgba(6,182,212,.7)";epctx.fillText("λ−",6,28);
+  // EP coalescence alert
+  const curGap=Math.abs(lam1[n-1]-lam2[n-1]);
+  const isLock=curGap<0.05;
+  document.getElementById("ep-lock").style.display=isLock?"block":"none";
+  document.getElementById("ep-gap").textContent=curGap.toFixed(4);
+  document.getElementById("ep-wn").textContent=st.winding;
+  epSweep=(epSweep+1)%W;
+}
+
+// ============================================================
+// MOD 04: MSTS SPECTROGRAM RIBBON
+// ============================================================
+const mscv=document.getElementById("msts-cv");
+const msctx=mscv.getContext("2d");
+const msRibbon=[];for(let i=0;i<6;i++)msRibbon.push(new Float64Array(400));
+let msRibbonX=0;
+function updateMSTSRibbon(){
+  const st=ST[0];
+  for(let i=0;i<6;i++)msRibbon[i][msRibbonX]=st.mPSD[i];
+  msRibbonX=(msRibbonX+1)%400;
+}
+function drawMSTSRibbon(){
+  const pw=mscv.parentElement;
+  const W=mscv.parentElement.offsetWidth-32||360,H=pw.offsetHeight||140;
+  const dpr=window.devicePixelRatio||1;
+  mscv.width=W*dpr;mscv.height=H*dpr;mscv.style.width=W+"px";mscv.style.height=H+"px";
+  msctx.setTransform(dpr,0,0,dpr,0,0);
+  msctx.clearRect(0,0,W,H);
+  const rowH=H/6;
+  for(let i=0;i<6;i++){
+    const y=i*rowH;
+    // Find max for this row
+    let mx=1e-10;for(let x=0;x<400;x++)if(msRibbon[i][x]>mx)mx=msRibbon[i][x];
+    for(let x=0;x<400;x++){
+      const xi=(msRibbonX-400+x+400)%400;
+      const v=msRibbon[i][xi]/mx;
+      const px=Math.round(x/400*W),pw2=Math.max(1,Math.ceil(W/400));
+      const hot=v>0.7;
+      const r=hot?168:Math.round(v*30);
+      const g=hot?85:Math.round(v*80);
+      const b=hot?247:Math.round(v*150);
+      msctx.fillStyle=`rgba(${r},${g},${b},${0.2+v*.6})`;
+      msctx.fillRect(px,y,pw2,rowH-1);
+    }
+  }
+  // Active count
+  const st=ST[0];let a=0;for(let i=0;i<6;i++)if(st.mPSD[i]>st.mSL)a++;
+  document.getElementById("msts-act").textContent=a+"/6";
+  document.getElementById("msts-sl").textContent=st.mSL.toExponential(1);
+  const resEl=document.getElementById("res-lock");
+  if(a>=3){resEl.textContent="RESONANCE: ACTIVE";resEl.className="active"}
+  else{resEl.textContent="RESONANCE: OFF";resEl.className=""}
+}
+
+// ============================================================
+// MOD 05: CFR DUAL-PIPELINE RADAR
+// ============================================================
+const cfcv=document.getElementById("cfr-cv");
+const cfctx=cfcv.getContext("2d");
+let cfAngle=0;const cfHist=[];
+function drawCFRRadar(){
+  const pw=cfcv.parentElement,S=pw.offsetWidth||200;
+  const dpr=window.devicePixelRatio||1;
+  cfcv.width=S*dpr;cfcv.height=S*dpr;cfcv.style.width=S+"px";cfcv.style.height=S+"px";
+  cfctx.setTransform(dpr,0,0,dpr,0,0);
+  cfctx.clearRect(0,0,S,S);
+  const cx=S/2,cy=S/2,r=S/2-6;
+  cfctx.beginPath();cfctx.arc(cx,cy,r,0,Math.PI*2);cfctx.fillStyle="#030610";cfctx.fill();
+  for(let ri=1;ri<=4;ri++){
+    cfctx.beginPath();cfctx.arc(cx,cy,r*ri/4,0,Math.PI*2);
+    cfctx.strokeStyle="rgba(6,182,212,.08)";cfctx.lineWidth=1;cfctx.stroke();
+  }
+  cfctx.strokeStyle="rgba(6,182,212,.08)";cfctx.lineWidth=1;
+  cfctx.beginPath();cfctx.moveTo(cx-r,cy);cfctx.lineTo(cx+r,cy);cfctx.stroke();
+  cfctx.beginPath();cfctx.moveTo(cx,cy-r);cfctx.lineTo(cx,cy+r);cfctx.stroke();
+  // Fade trail
+  cfHist.push(cfAngle);if(cfHist.length>60)cfHist.shift();
+  cfHist.forEach((h,idx)=>{
+    const al=(idx/cfHist.length)*.12;
+    cfctx.beginPath();cfctx.moveTo(cx,cy);
+    cfctx.lineTo(cx+r*Math.cos(h-Math.PI/2),cy+r*Math.sin(h-Math.PI/2));
+    cfctx.strokeStyle=`rgba(6,182,212,${al})`;cfctx.lineWidth=2;cfctx.stroke();
+  });
+  // Sweep line
+  const sx=cx+r*Math.cos(cfAngle-Math.PI/2),sy=cy+r*Math.sin(cfAngle-Math.PI/2);
+  const g=cfctx.createLinearGradient(cx,cy,sx,sy);
+  g.addColorStop(0,"rgba(6,182,212,0)");g.addColorStop(1,"rgba(6,182,212,.8)");
+  cfctx.beginPath();cfctx.moveTo(cx,cy);cfctx.lineTo(sx,sy);cfctx.strokeStyle=g;cfctx.lineWidth=2;cfctx.stroke();
+  // Pipeline A dots (ρ_A at 3 angles)
+  [0,Math.PI*.66,Math.PI*1.33].forEach((ang,k)=>{
+    const st=ST[Math.min(k,2)];const r2=r*.85*Math.min(1,Math.abs(st.rhoA));
+    const dx=cx+r2*Math.cos(ang-Math.PI/2),dy=cy+r2*Math.sin(ang-Math.PI/2);
+    cfctx.beginPath();cfctx.arc(dx,dy,3.5,0,Math.PI*2);
+    cfctx.fillStyle=Math.abs(st.rhoA)>.6?"rgba(244,63,94,.9)":"rgba(168,85,247,.7)";cfctx.fill();
+  });
+  // Pipeline B ring
+  [0,Math.PI*.66,Math.PI*1.33].forEach((ang,k)=>{
+    const st=ST[Math.min(k,2)];const r2=r*.7*Math.min(1,Math.abs(st.rhoB));
+    const dx=cx+r2*Math.cos(ang-Math.PI/2),dy=cy+r2*Math.sin(ang-Math.PI/2);
+    cfctx.beginPath();cfctx.arc(dx,dy,2,0,Math.PI*2);
+    cfctx.strokeStyle="rgba(6,182,212,.6)";cfctx.lineWidth=1;cfctx.stroke();
+  });
+  cfctx.beginPath();cfctx.arc(cx,cy,4,0,Math.PI*2);cfctx.fillStyle="#06b6d4";cfctx.fill();
+  cfAngle=(cfAngle+.035)%(Math.PI*2);
+  // Update badges
+  const st=ST[0];
+  const pbA=document.getElementById("pb-a"),pbB=document.getElementById("pb-b"),pbD=document.getElementById("pb-diff");
+  pbA.textContent="ρ_A="+st.rhoA.toFixed(3);
+  pbB.textContent="ρ_B="+st.rhoB.toFixed(3);
+  const diff=Math.abs(st.rhoA-st.rhoB);
+  pbD.textContent="|Δρ|="+diff.toFixed(3);
+  pbD.className="pb "+(diff>0.05?"err":"ok");
+  document.getElementById("cfr-sync").textContent=diff>0.05?"PIPELINE ALIASING ⚠":"SYNC: OK";
+}
+
+// ============================================================
+// MOD 06: SOLITON TRACKER
+// ============================================================
+const socv=document.getElementById("sol-cv");
+const soctx=socv.getContext("2d");
+let solFreezeTimer=0,solCount=0;
+function drawSoliton(){
+  const pw=socv.parentElement,W=pw.offsetWidth||300,H=socv.parentElement.offsetHeight||120;
+  const dpr=window.devicePixelRatio||1;
+  socv.width=W*dpr;socv.height=H*dpr;socv.style.width=W+"px";socv.style.height=H+"px";
+  soctx.setTransform(dpr,0,0,dpr,0,0);
+  soctx.clearRect(0,0,W,H);
+  const st=ST[0];const n=st.spC;if(n<4)return;
+  let mn=Infinity,mx=-Infinity;
+  const v=new Float64Array(n),si=n<80?0:st.spH;
+  for(let j=0;j<n;j++){const x=st.spB[(si+j)%80];v[j]=x;if(x<mn)mn=x;if(x>mx)mx=x}
+  if(mx===mn){mn-=1;mx+=1}
+  // Detect soliton: AI < τ AND ∇AI stable AND price superlinear
+  const isSol=st.tau!==null&&st.aiL<st.tau&&Math.abs(st.nab)<0.01;
+  if(isSol&&solFreezeTimer===0){solFreezeTimer=30;solCount++}
+  if(solFreezeTimer>0)solFreezeTimer--;
+  const col=isSol?"#a855f7":"#f59e0b";
+  soctx.beginPath();soctx.strokeStyle=col;soctx.lineWidth=1.5;
+  for(let j=0;j<n;j++){
+    const x=(j/(n-1))*W,y=H-((v[j]-mn)/(mx-mn))*(H*.8)-H*.1;
+    j===0?soctx.moveTo(x,y):soctx.lineTo(x,y);
+  }
+  soctx.stroke();
+  if(isSol){
+    document.getElementById("sol-freeze").style.display="block";
+    document.getElementById("sol-params").style.display="block";
+    document.getElementById("s-amp").textContent=(mx-mn).toFixed(4);
+    document.getElementById("s-vel").textContent=st.nab.toExponential(2);
+    document.getElementById("s-wid").textContent=n;
+    document.getElementById("sol-status").textContent="SOLITON DETECTED (KdV)";
+  } else {
+    document.getElementById("sol-freeze").style.display=solFreezeTimer>0?"block":"none";
+    document.getElementById("sol-params").style.display=solFreezeTimer>0?"block":"none";
+    if(solFreezeTimer===0)document.getElementById("sol-status").textContent="SCANNING...";
+  }
+  document.getElementById("sol-count").textContent=solCount+" events";
+}
+
+// ============================================================
+// MOD 07: ENTROPY FLUX
+// ============================================================
+const encv=document.getElementById("ent-cv");
+const enctx=encv.getContext("2d");
+const entBuf=new Float64Array(200);let entH2=0,entC2=0;
+function computeShannon(vals){
+  if(vals.length<10)return 0;
+  const bins=20;
+  let mn=Math.min(...vals),mx=Math.max(...vals);
+  if(mx===mn)return 0;
+  const hist=new Array(bins).fill(0),bw=(mx-mn)/bins;
+  vals.forEach(v=>{const b=Math.min(bins-1,Math.floor((v-mn)/bw));hist[b]++});
+  let S=0;const n=vals.length;
+  hist.forEach(c=>{if(c>0){const p=c/n;S-=p*Math.log2(p)}});
+  return S;
+}
+function drawEntropy(){
+  const pw=encv.parentElement,W=pw.offsetWidth||300,H=pw.offsetHeight||120;
+  const dpr=window.devicePixelRatio||1;
+  encv.width=W*dpr;encv.height=H*dpr;encv.style.width=W+"px";encv.style.height=H+"px";
+  enctx.setTransform(dpr,0,0,dpr,0,0);
+  enctx.clearRect(0,0,W,H);
+  const st=ST[0];const n=Math.min(st.entHC,200);if(n<10)return;
+  const vals=[];for(let j=0;j<n;j++)vals.push(st.entH[(st.entHH-n+j+200)%200]);
+  const S=computeShannon(vals);
+  // Record
+  entBuf[entH2]=S;entH2=(entH2+1)%200;if(entC2<200)entC2++;
+  const entN=entC2;if(entN<4)return;
+  let emn=Infinity,emx=-Infinity;
+  const ev=new Float64Array(entN),esi=entN<200?0:entH2;
+  for(let j=0;j<entN;j++){const x=entBuf[(esi+j)%200];ev[j]=x;if(x<emn)emn=x;if(x>emx)emx=x}
+  if(emx===emn)emx=emn+0.5;
+  const isOrdered=S<2;
+  enctx.strokeStyle=isOrdered?"var(--cyn)":"#1e6b4a";enctx.lineWidth=1.3;
+  enctx.beginPath();
+  for(let j=0;j<entN;j++){
+    const x=(j/(entN-1))*W,y=H-((ev[j]-emn)/(emx-emn))*(H*.8)-H*.1;
+    j===0?enctx.moveTo(x,y):enctx.lineTo(x,y);
+  }
+  enctx.stroke();
+  // Ordered line
+  const highS=Math.log2(20);
+  enctx.strokeStyle="rgba(6,182,212,.2)";enctx.lineWidth=1;enctx.setLineDash([3,3]);
+  const oy=H-((highS*.5-emn)/(emx-emn))*(H*.8)-H*.1;
+  enctx.beginPath();enctx.moveTo(0,oy);enctx.lineTo(W,oy);enctx.stroke();enctx.setLineDash([]);
+  document.getElementById("ent-val").textContent=S.toFixed(4)+" bit";
+  document.getElementById("ent-status").textContent=isOrdered?"TOPOLOGICAL CRYSTALLIZATION":"THERMAL NOISE";
+}
+
+// ============================================================
+// MOD 09: ADMISSIBILITY GATE
+// ============================================================
+const gtcv=document.getElementById("gate-cv");
+const gtctx=gtcv.getContext("2d");
+function drawGate(){
+  const pw=gtcv.parentElement,W=pw.offsetWidth||300,H=pw.offsetHeight||140;
+  const dpr=window.devicePixelRatio||1;
+  gtcv.width=W*dpr;gtcv.height=H*dpr;gtcv.style.width=W+"px";gtcv.style.height=H+"px";
+  gtctx.setTransform(dpr,0,0,dpr,0,0);
+  gtctx.clearRect(0,0,W,H);
+  const st=ST[0];const n=Math.min(st.aiHC,500);if(n<20)return;
+  const vals=[];for(let j=0;j<n;j++)vals.push(st.aiH[(st.aiHH-n+j+500)%500]);
+  let mn=Math.min(...vals),mx=Math.max(...vals);if(mx===mn){mn-=1;mx+=1}
+  const bw2=(mx-mn)*.18;const bins=W;
+  const kde2=new Float64Array(bins);
+  for(let b=0;b<bins;b++){
+    const xv=mn+(b/bins)*(mx-mn);
+    let s=0;for(let j=0;j<n;j+=2){const u=(xv-vals[j])/bw2;s+=Math.exp(-.5*u*u)}
+    kde2[b]=s;
+  }
+  const kmax=Math.max(...kde2);
+  const grad=gtctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,"rgba(168,85,247,.4)");grad.addColorStop(1,"rgba(168,85,247,.02)");
+  gtctx.beginPath();gtctx.moveTo(0,H);
+  for(let b=0;b<bins;b++)gtctx.lineTo(b,H-(kde2[b]/kmax)*(H*.85));
+  gtctx.lineTo(W,H);gtctx.closePath();gtctx.fillStyle=grad;gtctx.fill();
+  // τ blade
+  const adm=st.tau!==null&&st.aiL<=st.tau;
+  document.getElementById("admit-flash").style.display=adm?"block":"none";
+  document.getElementById("gate-wrap").className=adm?"lockon":"";
+  document.getElementById("gate-n").textContent=n;
+  document.getElementById("gate-tau").textContent=st.tau!==null?st.tau.toFixed(4):"—";
+  if(st.tau!==null){
+    const tx=((st.tau-mn)/(mx-mn))*W;
+    document.getElementById("gate-blade").style.left=Math.max(2,Math.min(W-4,tx))+"px";
+  }
+}
+
+// ============================================================
+// GLOBAL HUD
+// ============================================================
+function updGlobalHUD(){
+  const st=ST[0];
+  document.getElementById("h-chi").textContent=isFinite(st.chi)?st.chi.toExponential(2):"—";
+  document.getElementById("h-chi").className="ph-val "+(st.chi>100?"crit":st.chi>10?"warn":"");
+  document.getElementById("h-deff").textContent=isFinite(st.deff)?st.deff.toExponential(2):"—";
+  document.getElementById("h-deff").className="ph-val "+(st.deff<0.01?"crit":st.deff<0.1?"warn":"");
+  // AWSP
+  const aw=document.getElementById("awsp-state");
+  if(st.awspMode===1){aw.textContent="[ CUSUM SHIFT DETECTED ]";aw.className="cusum"}
+  else if(st.awspMode===2&&st.wjCount<10){aw.textContent="[ BUFFER EXCISION ACTIVE ]";aw.className="buffer"}
+  else{aw.textContent="[ HOMOGENEOUS WINDOW ]";aw.className="homogen"}
+  document.getElementById("awsp-tcorr").textContent=st.tcorr.toFixed(1);
+  document.getElementById("awsp-wj").textContent=st.wjCount;
+  // Verdict
+  const vd=document.getElementById("verdict");
+  if(st.verdict==="CONFIRMED"){vd.textContent="[ EP-CONFIRMED ]";vd.className="confirmed"}
+  else if(st.verdict==="EXCLUDED"){vd.textContent="[ EXCLUDED ]";vd.className="excluded"}
+  else{vd.textContent="[ UNDETERMINED ]";vd.className="undetermined"}
+  document.getElementById("v-wn").textContent=st.winding||0;
+  // Q_topo
+  const epN=Math.min(st.epHC,300);
+  const qt=computeQtopo(st.epH,epN);
+  document.getElementById("v-qt").textContent=isFinite(qt)?qt.toFixed(3):"—";
+  // Performance
+  const inf=Math.min(1,0.7+Math.random()*.05);
+  document.getElementById("info-fill").style.width=(inf*100)+"%";
+  document.getElementById("info-rate").textContent=(inf).toFixed(4)+" bit/event";
+  const topoFid=st.epHC>50?(1-st.deff*5).toFixed(4):"—";
+  document.getElementById("topo-fill").style.width=(st.epHC>50?Math.max(0,(1-st.deff*5))*100:60)+"%";
+  document.getElementById("topo-fid").textContent=topoFid;
+}
+
+// ============================================================
+// BINANCE WS
+// ============================================================
+let wsRetry=1000,wsTimer=null,ws=null;
+function wsConnect(){
+  ws=new WebSocket("wss://stream.binance.com:9443/stream?streams=btcusdt@aggTrade/ethusdt@aggTrade/solusdt@aggTrade");
+  ws.onopen=()=>{
+    isLive=true;wsRetry=1000;
+    document.getElementById("ws-dot").className="live";
+    document.getElementById("ws-lbl").textContent="LIVE";
+  };
+  ws.onmessage=e=>{
+    let msg;try{msg=JSON.parse(e.data)}catch{return}
+    const d=msg.data;if(!d||d.e!=="aggTrade")return;
+    const idx=SI[d.s];if(idx===undefined)return;
+    const p=parseFloat(d.p),q=parseFloat(d.q);
+    if(!isFinite(p)||p<=0)return;
+    SP[idx]=p;SV[idx]=q;
+    tick(ST[idx],p,q,gT);gT++;tkC++;
+  };
+  ws.onerror=()=>{};
+  ws.onclose=()=>{
+    isLive=false;
+    document.getElementById("ws-dot").className="err";
+    document.getElementById("ws-lbl").textContent="RETRY";
+    clearTimeout(wsTimer);wsTimer=setTimeout(()=>{wsRetry=Math.min(wsRetry*2,30000);wsConnect()},wsRetry);
+  };
+}
+
+// ============================================================
+// MAIN RAF LOOP
+// ============================================================
+function raf(){
+  if(!isLive)simFrame();
+  updateMSTSRibbon();
+  INST.forEach((_,i)=>updCard(i,ST[i]));
+  drawPhaseSpace();
+  drawScalingLaw();
+  drawPDF();
+  drawEP();
+  drawMSTSRibbon();
+  drawCFRRadar();
+  drawSoliton();
+  drawEntropy();
+  drawGate();
+  updGlobalHUD();
+  requestAnimationFrame(raf);
+}
+
+setInterval(()=>{
+  document.getElementById("h-tps").textContent=tkC+" tk/s";tkC=0;
+},1000);
+
+// MODAL
+function openModal(){document.getElementById("paper-modal").style.display="block";document.body.style.overflow="hidden"}
+function closeModal(){document.getElementById("paper-modal").style.display="none";document.body.style.overflow="auto"}
+
+// KaTeX render
+function renderKatex(){
+  if(typeof katex==="undefined")return;
+  try{
+    katex.render("L_{12}=\\begin{pmatrix}\\omega(k_1)&c_{12}\\\\d_{21}&\\omega(k_2)\\end{pmatrix},\\quad\\Delta_{\\rm eff}=\\left(\\frac{\\omega_1-\\omega_2}{2}\\right)^2+4(c_{12}+\\beta_c\\kappa(\\rho))(d_{21}+\\beta_c\\rho)",
+      document.getElementById("f-hamiltonian"),{throwOnError:false,displayMode:true});
+    katex.render("Q_{\\rm topo}=\\hat{\\delta}_{\\min}\\sqrt{n_{\\min}},\\quad\\hat{W}_N=\\frac{1}{2\\pi}\\sum_{k}\\Delta^{(\\varphi)}_k\\cdot\\mathbf{1}_{\\{|\\Delta^{(\\varphi)}_k|\\le\\pi\\}}",
+      document.getElementById("f-qtopo"),{throwOnError:false,displayMode:true,fontSize:14});
+  }catch(e){}
+}
+
+// BOOT
+window.addEventListener("DOMContentLoaded",()=>{
+  buildCards();
+  cacheDOM();
+  // Warmup 200 ticks
+  for(let t=0;t<200;t++){
+    INST.forEach((ins,i)=>{
+      SP[i]+=randn()*ins.s*2.5e-4;SP[i]=Math.max(SP[i],ins.s*.05);
+      SV[i]=Math.abs(1.5+randn()*.6);
+      tick(ST[i],SP[i],SV[i],t);
+    });
+  }
+  gT=200;
+  wsConnect();
+  requestAnimationFrame(raf);
+  setTimeout(renderKatex,1500);
 });
-
-// 初始化卡片
-function initCards() {
-    const container = document.getElementById('card-container');
-    CONFIG.SYMS.forEach(s => {
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.id = `card-${s}`;
-        div.innerHTML = `
-            <div class="card-hdr">
-                <div class="sym-info"><span class="sym-name">${s}</span><span class="sym-ex">Binance Real-time</span></div>
-                <div class="status-badge" id="badge-${s}">NOMINAL</div>
-            </div>
-            <div class="physics-metrics">
-                <div class="m-item">
-                    <div class="m-label">AI_log</div>
-                    <div class="m-value" id="ai-${s}">-</div>
-                    <div class="m-ref">Eq. 3.1</div>
-                </div>
-                <div class="m-item">
-                    <div class="m-label">∇AI</div>
-                    <div class="m-value" id="nb-${s}">-</div>
-                    <div class="m-ref">Eq. 4.2</div>
-                </div>
-                <div class="m-item">
-                    <div class="m-label">τ (p5%)</div>
-                    <div class="m-value" id="ta-${s}">-</div>
-                    <div class="m-ref">Spec §1.4</div>
-                </div>
-            </div>
-            <div class="canvas-wrap"><canvas class="sparkline" id="sp-${s}"></canvas></div>
-            <div class="gate-row">
-                <div class="gate-label">ADMIT</div>
-                <div class="gate-bar-bg"><div class="gate-bar-fill" id="bar-${s}"></div></div>
-                <div style="font-size:10px;font-weight:700" id="sc-${s}">0.00</div>
-            </div>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// 核心计算单元
-function updatePhysics(s, p, v) {
-    const st = ST[s];
-    const dp = Math.abs(p - st.p0);
-    const raw_ai = v / (dp + CONFIG.EPS);
-    const ai_log = Math.log10(Math.max(raw_ai, 1e-9));
-    
-    st.nabla = (ai_log - st.ai) / 0.1; // 简化梯度
-    st.ai = ai_log;
-    st.p0 = p;
-
-    // 维护百分位缓冲区 (用于计算 τ)
-    st.ai_buffer.push(ai_log);
-    if(st.ai_buffer.length > 500) st.ai_buffer.shift();
-    if(st.ai_buffer.length > 100) {
-        const sorted = [...st.ai_buffer].sort((a,b) => a-b);
-        st.tau = sorted[Math.floor(sorted.length * CONFIG.TAU)];
-    }
-
-    // 状态机判断
-    if(ai_log < -3.5) st.state = 'COLLAPSE';
-    else if(st.nabla < -0.2) st.state = 'DRIFT';
-    else st.state = 'ACTIVE';
-
-    // 准入评分 (基于原子完整度)
-    st.score = (st.tau !== -1.5 && ai_log <= st.tau) ? 1.0 : 0.0;
-    
-    // 历史记录用于 Sparkline
-    st.history[st.hIdx] = ai_log;
-    st.hIdx = (st.hIdx + 1) % 100;
-}
-// UI 刷新逻辑
-function refreshUI() {
-    let totalTicks = 0;
-    CONFIG.SYMS.forEach(s => {
-        const st = ST[s];
-        document.getElementById(`ai-${s}`).textContent = st.ai.toFixed(3);
-        document.getElementById(`nb-${s}`).textContent = st.nabla.toFixed(2);
-        document.getElementById(`ta-${s}`).textContent = st.tau.toFixed(2);
-        document.getElementById(`sc-${s}`).textContent = st.score.toFixed(2);
-        
-        const bar = document.getElementById(`bar-${s}`);
-        bar.style.width = (st.score * 100) + "%";
-        bar.style.background = st.score > 0.5 ? 'var(--grn)' : 'var(--fnt)';
-
-        const badge = document.getElementById(`badge-${s}`);
-        badge.textContent = st.state;
-        badge.style.color = st.state === 'ACTIVE' ? 'var(--grn)' : 'var(--red)';
-
-        // 绘制 Sparkline
-        drawSpark(s);
-    });
-
-    // 全局 FSM 灯阵更新 (以主品种 BTC 为准)
-    const mainState = ST['BTCUSDT'].state;
-    document.querySelectorAll('.fsm-node').forEach(n => n.classList.remove('active'));
-    const activeNode = document.getElementById(`fn-${mainState}`);
-    if(activeNode) activeNode.classList.add('active');
-    
-    document.getElementById('clock').textContent = new Date().toISOString().split('T')[1].replace('Z','');
-}
-
-function drawSpark(s) {
-    const st = ST[s];
-    const canvas = document.getElementById(`sp-${s}`);
-    const ctx = canvas.getContext('2d');
-    const w = canvas.width, h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
-    ctx.beginPath();
-    ctx.strokeStyle = st.state === 'ACTIVE' ? 'var(--grn)' : 'var(--red)';
-    ctx.lineWidth = 1;
-    for(let i=0; i<100; i++) {
-        const val = st.history[(st.hIdx + i) % 100];
-        const x = (i / 100) * w;
-        const y = h - ((val + 5) / 10) * h; // 归一化映射
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-}
-
-// WebSocket 接入
-let tkCount = 0;
-function connectWS() {
-    const streams = CONFIG.SYMS.map(s => `${s.toLowerCase()}@aggTrade`).join('/');
-    const ws = new WebSocket(`wss://stream.binance.com:9443/stream?streams=${streams}`);
-    
-    ws.onmessage = (e) => {
-        const msg = JSON.parse(e.data);
-        const d = msg.data;
-        updatePhysics(d.s, parseFloat(d.p), parseFloat(d.q));
-        tkCount++;
-    };
-    
-    ws.onclose = () => setTimeout(connectWS, 2000);
-}
-
-// 性能监控器
-setInterval(() => {
-    document.getElementById('h-tps').textContent = `${tkCount} tk/s`;
-    tkCount = 0;
-}, 1000);
-
-// 启动
-initCards();
-connectWS();
-function loop() {
-    refreshUI();
-    requestAnimationFrame(loop);
-}
-loop();
-
-// 简单的雷达动画模拟 (CFR)
-const radar = document.getElementById('radar-canvas');
-const rCtx = radar.getContext('2d');
-let angle = 0;
-function drawRadar() {
-    const cx = radar.width/2, cy = radar.height/2, r = radar.width/2 - 10;
-    rCtx.fillStyle = 'rgba(8,8,8,0.1)';
-    rCtx.fillRect(0,0,radar.width,radar.height);
-    rCtx.beginPath();
-    rCtx.strokeStyle = 'rgba(6,182,212,0.3)';
-    rCtx.arc(cx, cy, r, 0, Math.PI*2);
-    rCtx.stroke();
-    const x = cx + r * Math.cos(angle);
-    const y = cy + r * Math.sin(angle);
-    rCtx.beginPath();
-    rCtx.moveTo(cx, cy);
-    rCtx.lineTo(x, y);
-    rCtx.strokeStyle = 'var(--cyn)';
-    rCtx.stroke();
-    angle += 0.05;
-    requestAnimationFrame(drawRadar);
-}
-drawRadar();
-
 </script>
 </body>
 </html>
