@@ -1,8 +1,8 @@
 # ✨ **MA‑CHAO LAB V3.6**  
 # 🔱 **NON‑HERMITIAN SINGULARITY OBSERVATORY**  
 ### **Premium Black‑Gold Edition**
-#This repository contains a scientific instrumentation prototype for studying non‑Hermitian information‑fluid dynamics.
-It provides no trading signals or financial recommendations.
+***This repository contains a scientific instrumentation prototype for studying non‑Hermitian information‑fluid dynamics.
+It provides no trading signals or financial recommendations.***
 <p align="left">
   <a href="https://doi.org/10.5281/zenodo.18933114">
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.18933114.svg" />
